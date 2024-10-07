@@ -22,7 +22,7 @@
 	"author": "Ionel Lupu <ionel.cristian.lupu@gmail.com> (https://ionel-lupu.com)",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/GeoPulseData/pulse"
+		"url": "git+https://github.com/GeoPulseData/pulse.git"
 	},
 	"license": "MIT",
 	"files": [

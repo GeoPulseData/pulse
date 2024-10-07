@@ -1,135 +1,99 @@
 import type { IPGeoPulse, IPRecord } from './types.js'
 import { findIPData, loadData, readData } from './utils.js'
 import fs from 'node:fs/promises'
+import { Readable } from 'stream'
+import { createWriteStream } from 'fs'
+import { pipeline } from 'stream/promises'
 
 export let ipRanges: IPRecord[] | undefined
 
-export async function geoPulse(ip: string): Promise<IPGeoPulse | undefined> {
-    if (!ipRanges) {
-        ipRanges = await readData('ip-ranges.json')
+export class GeoPulse {
+    constructor(APIKey: string, private readonly loader: () => void = () => {}) {
+        this.loader = this.loader ?? (() => cloudLoader(APIKey))
     }
 
-    if (!ipRanges) {
-        await loadData(localLoader)
+    async lookup(ip: string): Promise<IPGeoPulse | undefined> {
+        if (!ipRanges) {
+            ipRanges = await readData('ip-ranges.json')
+        }
 
-        ipRanges = await readData('ip-ranges.json')
-    }
+        if (!ipRanges) {
+            await loadData(this.loader)
 
-    if (!ipRanges) {
+            ipRanges = await readData('ip-ranges.json')
+        }
+
+        if (!ipRanges) {
+            return
+        }
+
+        if (ipRanges.length > 0) {
+            return findIPData(ip, ipRanges)
+        }
+
+        // If IP isn't in the RIPE or APNIC range, check ARIN
+        // const whoisData = await fetchARINWHOIS(ip)
+        // console.log('whois ->', whoisData)
+        // if (whoisData && !Array.isArray(whoisData)) {
+        //     return whoisData;
+        // }
+
         return
     }
 
-    if (ipRanges.length > 0) {
-        return findIPData(ip, ipRanges)
-    }
-
-    // If IP isn't in the RIPE or APNIC range, check ARIN
-    // const whoisData = await fetchARINWHOIS(ip)
-    // console.log('whois ->', whoisData)
-    // if (whoisData && !Array.isArray(whoisData)) {
-    //     return whoisData;
-    // }
-
-    return
 }
 
-function localLoader() {
+export function localLoader() {
     return fs.cp('../ip-ranges.json', './ip-ranges.json')
 }
 
-function cloudLoader() {
-    // TODO
-}
+export async function cloudLoader(key: string): Promise<void> {
+    try {
+        const downloadUrlResponse = await fetch(`https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/ip-data-download-url?key=${encodeURIComponent(key)}`)
 
-const x = {
-    'continent': {
-        'code': 'EU',
-        'geonameId': 6255148,
-        'names': {
-            'de': 'Europa',
-            'en': 'Europe',
-            'es': 'Europa',
-            'fr': 'Europe',
-            'ja': 'ヨーロッパ',
-            'pt-BR': 'Europa',
-            'ru': 'Европа',
-            'zh-CN': '欧洲'
+        if (!downloadUrlResponse.ok) {
+            throw new Error(`Failed to get download URL: ${downloadUrlResponse.statusText} - ${JSON.stringify(await downloadUrlResponse.json())}`)
         }
-    },
-    'country': {
-        'geonameId': 798549,
-        'isInEuropeanUnion': true,
-        'isoCode': 'RO',
-        'names': {
-            'de': 'Rumänien',
-            'en': 'Romania',
-            'es': 'Rumanía',
-            'fr': 'Roumanie',
-            'ja': 'ルーマニア',
-            'pt-BR': 'Romênia',
-            'ru': 'Румыния',
-            'zh-CN': '罗马尼亚'
+
+        if (downloadUrlResponse.body === null) {
+            throw new Error('Download URL: Response body is null')
         }
-    },
-    'registeredCountry': {
-        'geonameId': 798549,
-        'isInEuropeanUnion': true,
-        'isoCode': 'RO',
-        'names': {
-            'de': 'Rumänien',
-            'en': 'Romania',
-            'es': 'Rumanía',
-            'fr': 'Roumanie',
-            'ja': 'ルーマニア',
-            'pt-BR': 'Romênia',
-            'ru': 'Румыния',
-            'zh-CN': '罗马尼亚'
+
+        const {downloadURL} = await downloadUrlResponse.json()
+        const fileResponse = await fetch(downloadURL)
+
+        if (!fileResponse.ok) {
+            throw new Error(`Failed to download file: ${fileResponse.statusText} - ${JSON.stringify(await fileResponse.json())}`)
         }
-    },
-    'traits': {
-        'isAnonymous': false,
-        'isAnonymousProxy': false,
-        'isAnonymousVpn': false,
-        'isAnycast': false,
-        'isHostingProvider': false,
-        'isLegitimateProxy': false,
-        'isPublicProxy': false,
-        'isResidentialProxy': false,
-        'isSatelliteProvider': false,
-        'isTorExitNode': false,
-        'ipAddress': '86.120.70.185',
-        'network': '86.120.64.0/21'
-    },
-    'city': {
-        'geonameId': 683506,
-        'names': {
-            'de': 'Bukarest',
-            'en': 'Bucharest',
-            'es': 'Bucarest',
-            'fr': 'Bucarest',
-            'ja': 'ブカレスト',
-            'pt-BR': 'Bucareste',
-            'ru': 'Бухарест',
-            'zh-CN': '布加勒斯特'
+
+        // Ensure fileResponse.body is not null
+        if (fileResponse.body === null) {
+            throw new Error('Response body is null')
         }
-    },
-    'location': {
-        'accuracyRadius': 200,
-        'latitude': 44.4946,
-        'longitude': 26.0578,
-        'timeZone': 'Europe/Bucharest'
-    },
-    'postal': {
-        'code': '014132'
-    },
-    'subdivisions': [
-        {
-            'geonameId': 683504,
-            'isoCode': 'B',
-            'names': {
-                'en': 'București',
-                'fr': 'Bucarest'
+
+        // Convert the ReadableStream to a Node.js Readable stream
+        const readableStream = new Readable()
+        readableStream._read = () => {} // _read is required but you can noop it
+
+        // @ts-ignore: TypeScript doesn't recognize the pipeTo method
+        await fileResponse.body.pipeTo(new WritableStream({
+            write(chunk) {
+                readableStream.push(chunk)
+            },
+            close() {
+                readableStream.push(null)
             }
-        }
-    ]
+        }))
+
+        const outputPath = './ip-ranges.json'
+        const fileStream = createWriteStream(outputPath)
+
+        // Use the pipeline function to handle the streaming
+        await pipeline(readableStream, fileStream)
+
+        console.log(`File downloaded successfully to ${outputPath}`)
+    } catch (error) {
+        console.error('Error downloading file:', error)
+        throw error
+    }
 }

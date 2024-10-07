@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 import { findIPData, loadData, readData } from '../src/utils.js'
 import fs, { access, unlink } from 'node:fs/promises'
 import { constants } from 'node:fs'
+import { GeoPulse, localLoader } from '../src/index.js'
 
 const ipRangesPath = './tests/test-ip-ranges.json'
 
@@ -49,3 +50,12 @@ test('find the ip data', async () => {
         },
     })
 })
+
+
+// test('ip data info', async () => {
+//     const geoPulse = new GeoPulse('fe94d99f-439e-434f-b898-d6aee06c941c', localLoader)
+//     const ip = '80.65.220.23'
+//     // const ip = '2a02:2f0d:2000:e800:2c6b:d2e3:23be:94f2'
+//     const info = await geoPulse.lookup(ip)
+//     console.log('info ->', info)
+// }, {timeout: 60000000})
