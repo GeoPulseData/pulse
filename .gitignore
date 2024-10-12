@@ -2,3 +2,5 @@ node_modules
 dist
 .idea
 ip-ranges.json
+ip-ranges.meta.json
+new-test-ip-ranges.json

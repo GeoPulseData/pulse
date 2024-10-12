@@ -11,12 +11,6 @@ export async function readData(filePath: string): Promise<any | undefined> {
     }
 }
 
-export async function loadData(loader: () => void) {
-    await loader()
-    //
-    // return readData(filePath)
-}
-
 function findCurrency(country: string) {
     return currencies.find(currency => currency.countryCode === country)
 }
