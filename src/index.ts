@@ -1,6 +1,6 @@
 import type { IPGeoPulse, IPRecord } from './types.js'
 import { findIPData, readData } from './utils.js'
-import fs, { writeFile } from 'node:fs/promises'
+import fs, { stat, writeFile } from 'node:fs/promises'
 import { Readable } from 'stream'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
@@ -8,22 +8,36 @@ import { join } from 'node:path'
 
 export let ipRanges: IPRecord[] | undefined
 
-interface Config {
+interface Config{
     baseDirectory?: string
     dataFilename?: string
     metaDataFilename?: string
     loader?: () => void
+    autoUpdate?: boolean
 }
+
+type AutoUpdateIsOn  = {autoUpdate: true , autoUpdateMinutes?: number}
+type AutoUpdateIsOff  = {autoUpdate?: false , autoUpdateMinutes?: never}
 
 export class GeoPulse {
     readonly loader: () => void | Promise<void>
 
-    constructor(APIKey: string, public config: Config = {
+    constructor(APIKey: string, public config: Config & (AutoUpdateIsOn | AutoUpdateIsOff) = {
         baseDirectory: '.',
         dataFilename: 'ip-ranges.json',
         metaDataFilename: 'ip-ranges.meta.json',
     }) {
         this.loader = config.loader ?? (() => cloudLoader(APIKey, this.dataFilenamePath))
+        if (this.config.autoUpdate) {
+            const checkTime = async () => {
+                await this.checkDataFreshness(this.config.autoUpdateMinutes)
+
+                setTimeout(checkTime, 60 * 1000) // Schedule the next check after 1 minute
+            }
+            checkTime().then()
+        }else{
+            this.checkDataFreshness(0).then()
+        }
     }
 
     get baseDirectory() {
@@ -35,7 +49,7 @@ export class GeoPulse {
     }
 
     get metaDataFilename() {
-        return this.config.dataFilename ?? 'ip-ranges.meta.json'
+        return this.config.metaDataFilename ?? 'ip-ranges.meta.json'
     }
 
     get dataFilenamePath() {
@@ -48,12 +62,7 @@ export class GeoPulse {
 
     async lookup(ip: string): Promise<IPGeoPulse | undefined> {
         if (!ipRanges) {
-            ipRanges = await readData(this.dataFilenamePath)
-        }
-
-        await this.checkDataFreshness()
-        if (!ipRanges) {
-
+            await stat(this.dataFilenamePath).catch(() => this.checkDataFreshness(0))
             ipRanges = await readData(this.dataFilenamePath)
         }
 
@@ -75,19 +84,6 @@ export class GeoPulse {
         return
     }
 
-    async autoUpdate(
-        periodInMinutes?: number
-    ) {
-        const checkTime = async () => {
-            await this.checkDataFreshness(periodInMinutes)
-
-            setTimeout(checkTime, 60 * 1000) // Schedule the next check after 1 minute
-        }
-
-        // Start the time checking process
-        await checkTime()
-    }
-
     private async checkDataFreshness(periodInMinutes = 60 * 24) {
         const meta = await readData(this.metaDataFilenamePath)
         const lastRun = meta?.lastRun
@@ -95,8 +91,9 @@ export class GeoPulse {
         const periodInMs = periodInMinutes * 60 * 1000 // Convert minutes to milliseconds
         const now = new Date()
 
-        const dataExists = await readData(this.dataFilenamePath)
+        const dataExists = await stat(this.dataFilenamePath).catch(() => false).then(() => true)
 
+        // console.log('checking for data freshness ->', periodInMinutes, dataExists, now.getTime() - targetDate.getTime(), periodInMs)
         if (!dataExists || now.getTime() - targetDate.getTime() >= periodInMs) {
             await this.loader()
 
@@ -114,7 +111,7 @@ export function localLoader(fromFilePath: string, toFilePath: string) {
 
 export async function cloudLoader(key: string, filePath: string): Promise<void> {
     try {
-        const downloadUrlResponse = await fetch(`https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/ip-data-download-url?key=${encodeURIComponent(key)}`)
+        const downloadUrlResponse = await fetch(`https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/ip-data-download-url?key=${encodeURIComponent(key)}`, {cache: 'no-cache'})
 
         if (!downloadUrlResponse.ok) {
             throw new Error(`Failed to get download URL: ${downloadUrlResponse.statusText} - ${await downloadUrlResponse.text()}`)
@@ -125,7 +122,7 @@ export async function cloudLoader(key: string, filePath: string): Promise<void> 
         }
 
         const {downloadURL} = await downloadUrlResponse.json()
-        const fileResponse = await fetch(downloadURL)
+        const fileResponse = await fetch(downloadURL, {cache: 'no-cache'})
 
         if (!fileResponse.ok) {
             throw new Error(`Failed to download file: ${fileResponse.statusText} - ${await fileResponse.text()}`)
