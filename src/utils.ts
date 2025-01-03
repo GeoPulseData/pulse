@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 import type { IPGeoPulse, IPRecord } from './types.js'
-import currencies from './countries.json' assert { type: 'json' }
+import currencies from './countries.json' with { type: 'json' }
 
 export async function readData(filePath: string): Promise<any | undefined> {
     try {
