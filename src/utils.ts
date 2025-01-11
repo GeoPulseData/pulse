@@ -1,8 +1,10 @@
 import fs from 'node:fs/promises'
-import type { IPGeoPulse, IPRecord } from './types.js'
+import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
 import currencies from './countries.json' with { type: 'json' }
 
-export async function readData(filePath: string): Promise<any | undefined> {
+const currencyMap = new Map(currencies.map(c => [c.countryCode, c]))
+
+export async function readData<T>(filePath: string): Promise<T | undefined> {
     try {
         const fileContent = await fs.readFile(filePath, 'utf-8')
         return JSON.parse(fileContent)
@@ -11,70 +13,116 @@ export async function readData(filePath: string): Promise<any | undefined> {
     }
 }
 
-function findCurrency(country: string) {
-    return currencies.find(currency => currency.countryCode === country)
-}
-
 //////////////////////////////////////////////////////////////
 export function ipToNumber(ip: string): number {
     return ip.split('.').reduce((int, octet) => (int << 8) + parseInt(octet, 10), 0) >>> 0
 }
 
-export function findIPData(ip: string, records: IPRecord[]): IPGeoPulse | undefined {
-    let ipRecord = records.find(record => {
-        if (ip.includes(':') && record.start.includes(':')) {
-            return isIPv6InRange(ip, record.start, record.end)
-        }
+export function optimizeRecords(records: IPRecord[]) {
+    const v4Records: IPv4Record[] = []
+    const v6Records: IPv6Record[] = []
 
-        if (ip.includes('.') && record.start.includes('.')) {
-            return isIPv4InRange(ip, record.start, record.end)
+    for(const record of records) {
+        if (record.start.includes('.')) {
+            v4Records.push({
+                ...record,
+                startNum: ipToNumber(record.start),
+                endNum: ipToNumber(record.end)
+            })
+        } else if (record.start.includes(':')) {
+            v6Records.push({
+                ...record,
+                startNum: ipv6ToBigInt(record.start),
+                endNum: ipv6ToBigInt(record.end)
+            })
         }
-    })
+    }
+
+    // Sort records by start range
+    return {
+        v4: v4Records.sort((a, b) => a.startNum - b.startNum),
+        v6: v6Records.sort((a, b) => (a.startNum < b.startNum ? -1 : a.startNum > b.startNum ? 1 : 0)),
+    }
+}
+
+export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Record[]}): IPGeoPulse | undefined {
+    let ipRecord: IPRecord | undefined
+
+    if (ip.includes('.')) {
+        const ipNum = ipToNumber(ip)
+        ipRecord = findIPv4Record(ipNum, records.v4)
+    } else if (ip.includes(':')) {
+        const ipNum = ipv6ToBigInt(ip)
+        ipRecord = findIPv6Record(ipNum, records.v6)
+    }
 
     if (!ipRecord) {
         return undefined
     }
 
-    const ipGeoPulse: IPGeoPulse = {
-        ip,
-    }
-
-    const countryData = findCurrency(ipRecord.country)
-
+    const countryData = currencyMap.get(ipRecord.country)
     if (!countryData) {
         return undefined
     }
 
-    if (countryData) {
-        ipGeoPulse.country = {
+    return {
+        ip,
+        country: {
             code: countryData.countryCode,
             name: countryData.countryName,
             capital: countryData.capital,
             continentName: countryData.continentName,
-        }
-
-        ipGeoPulse.currency = {
+        },
+        currency: {
             code: countryData.currencyCode,
             name: 'coming soon',
             symbol: 'coming soon'
         }
     }
-
-    return ipGeoPulse
 }
 
-export function isIPv4InRange(ip: string, rangeStart: string, rangeEnd: string): boolean {
-    const ipNum = ipToNumber(ip)
-    const startNum = ipToNumber(rangeStart)
-    const endNum = ipToNumber(rangeEnd)
-    return ipNum >= startNum && ipNum <= endNum
+function findIPv4Record(ipNum: number, records: IPv4Record[]): IPRecord | undefined {
+    let left = 0
+    let right = records.length - 1
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2)
+        const record = records[mid] as IPv4Record
+
+        if (ipNum >= record.startNum && ipNum <= record.endNum) {
+            return record
+        }
+
+        if (ipNum < record.startNum) {
+            right = mid - 1
+        } else {
+            left = mid + 1
+        }
+    }
+
+    return undefined
 }
 
-export function isIPv6InRange(ip: string, rangeStart: string, rangeEnd: string): boolean {
-    const ipBigInt = ipv6ToBigInt(ip)
-    const startBigInt = ipv6ToBigInt(rangeStart)
-    const endBigInt = ipv6ToBigInt(rangeEnd)
-    return ipBigInt >= startBigInt && ipBigInt <= endBigInt
+function findIPv6Record(ipNum: bigint, records: IPv6Record[]): IPRecord | undefined {
+    let left = 0
+    let right = records.length - 1
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2)
+        const record = records[mid] as IPv6Record
+
+        if (ipNum >= record.startNum && ipNum <= record.endNum) {
+            return record
+        }
+
+        if (ipNum < record.startNum) {
+            right = mid - 1
+        } else {
+            left = mid + 1
+        }
+    }
+
+    return undefined
 }
 
 function ipv6ToBigInt(ipv6: string): bigint {

@@ -1,14 +1,14 @@
-import type { IPGeoPulse, IPRecord } from './types.js'
-import { findIPData, readData } from './utils.js'
+import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
+import { findIPData, optimizeRecords, readData } from './utils.js'
 import fs, { stat, writeFile } from 'node:fs/promises'
 import { Readable } from 'stream'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import { join } from 'node:path'
 
-export let ipRanges: IPRecord[] | undefined
+export let ipRanges: {v4: IPv4Record[], v6: IPv6Record[]} | undefined
 
-interface Config{
+interface Config {
     baseDirectory?: string
     dataFilename?: string
     metaDataFilename?: string
@@ -16,8 +16,8 @@ interface Config{
     autoUpdate?: boolean
 }
 
-type AutoUpdateIsOn  = {autoUpdate: true , autoUpdateMinutes?: number}
-type AutoUpdateIsOff  = {autoUpdate?: false , autoUpdateMinutes?: never}
+type AutoUpdateIsOn = {autoUpdate: true, autoUpdateMinutes?: number}
+type AutoUpdateIsOff = {autoUpdate?: false, autoUpdateMinutes?: never}
 
 export class GeoPulse {
     readonly loader: () => void | Promise<void>
@@ -35,7 +35,7 @@ export class GeoPulse {
                 setTimeout(checkTime, 60 * 1000) // Schedule the next check after 1 minute
             }
             checkTime().then()
-        }else{
+        } else {
             this.checkDataFreshness(0).then()
         }
     }
@@ -63,16 +63,14 @@ export class GeoPulse {
     async lookup(ip: string): Promise<IPGeoPulse | undefined> {
         if (!ipRanges) {
             await stat(this.dataFilenamePath).catch(() => this.checkDataFreshness(0))
-            ipRanges = await readData(this.dataFilenamePath)
+            ipRanges = optimizeRecords(await readData<IPRecord[]>(this.dataFilenamePath) ?? [])
         }
 
         if (!ipRanges) {
             return
         }
 
-        if (ipRanges.length > 0) {
-            return findIPData(ip, ipRanges)
-        }
+        return findIPData(ip, ipRanges)
 
         // If IP isn't in the RIPE or APNIC range, check ARIN
         // const whoisData = await fetchARINWHOIS(ip)
@@ -80,20 +78,20 @@ export class GeoPulse {
         // if (whoisData && !Array.isArray(whoisData)) {
         //     return whoisData;
         // }
-
-        return
     }
 
     private async checkDataFreshness(periodInMinutes = 60 * 24) {
-        const meta = await readData(this.metaDataFilenamePath)
+        const meta = await readData<{lastRun: string}>(this.metaDataFilenamePath)
         const lastRun = meta?.lastRun
-        const targetDate = isNaN(new Date(lastRun).getTime()) ? new Date(0) : new Date(lastRun)
+        const targetDate = lastRun && !isNaN(new Date(lastRun).getTime())
+            ? new Date(lastRun)
+            : new Date(0)
         const periodInMs = periodInMinutes * 60 * 1000 // Convert minutes to milliseconds
         const now = new Date()
 
         const dataExists = await stat(this.dataFilenamePath).catch(() => false).then(() => true)
 
-        // console.log('checking for data freshness ->', periodInMinutes, dataExists, now.getTime() - targetDate.getTime(), periodInMs)
+        // console.log('checking for data freshness ->', periodInMinutes, dataExists, now.getTime(), targetDate.getTime(), now.getTime() - targetDate.getTime(), periodInMs)
         if (!dataExists || now.getTime() - targetDate.getTime() >= periodInMs) {
             await this.loader()
 

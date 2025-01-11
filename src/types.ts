@@ -1,3 +1,14 @@
+export interface IPv4Record extends IPRecord {
+    startNum: number
+    endNum: number
+}
+
+export interface IPv6Record extends IPRecord {
+    startNum: bigint
+    endNum: bigint
+}
+
+
 export interface IPRecord {
     start: string
     end: string

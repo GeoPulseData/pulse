@@ -56,11 +56,14 @@ describe('GeoPulse autoUpdate', () => {
 
     it('should NOT run the task immediately if the target date is in the past and the difference is smaller than the period AND the data file EXISTS', async () => {
         const dummyGeoPulse = getGeoPulseInstance()
+        // Create a demo instance just so it creates the metadata file.
+        // This file will be read by the geoPulse instance belo
         await mockFile(dummyGeoPulse.dataFilenamePath, [])
         await mockFile(dummyGeoPulse.metaDataFilenamePath, {lastRun: new Date(Date.now() - 10 * 60 * 1000).toISOString()}) // 10 minutes ago
 
         const periodInMinutes = 60 // 1 hour
         const geoPulse = getGeoPulseInstance(periodInMinutes)
+
         await new Promise(resolve => setTimeout(resolve, 500))
         expect(geoPulse.loader).not.toHaveBeenCalled() // Task should not run immediately
     })

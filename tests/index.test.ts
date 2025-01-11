@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest'
-import { findIPData, readData } from '../src/utils.js'
+import { findIPData, ipToNumber, optimizeRecords, readData } from '../src/utils.js'
 import { access, cp, rm } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { GeoPulse } from '../src/index.js'
+import type { IPRecord } from '../src/types.js'
 
 const ipRangesPath = './tests/demo-ip-ranges.json'
 
@@ -32,13 +33,16 @@ describe('reads ip data', () => {
                 .catch(() => false)
         ).toBe(true)
 
-        const ipRanges = await readData('./tests/ip-ranges.json')
-        expect(ipRanges).toBeInstanceOf(Array)
-        expect(ipRanges).toHaveLength(1)
-        expect(ipRanges[0]).toEqual({
+        const ipRanges = optimizeRecords(await readData<IPRecord[]>('./tests/ip-ranges.json') ?? [])
+        expect(ipRanges.v4).toBeInstanceOf(Array)
+        expect(ipRanges.v6).toBeInstanceOf(Array)
+        expect(ipRanges.v4).toHaveLength(1)
+        expect(ipRanges.v4[0]).toEqual({
             country: 'RO',
             start: '80.65.220.0',
-            end: '80.65.223.255'
+            end: '80.65.223.255',
+            startNum: ipToNumber('80.65.220.0'),
+            endNum: ipToNumber('80.65.223.255'),
         })
 
         await rm(geoPulse.dataFilenamePath, {force: true})
@@ -46,9 +50,12 @@ describe('reads ip data', () => {
     })
 
     test('find the ip data', async () => {
-        const ipRanges = await readData(ipRangesPath)
+        const ipRanges = optimizeRecords(await readData<IPRecord[]>(ipRangesPath) ?? [])
         const ip = '80.65.220.23'
-        expect(findIPData(ip, ipRanges)).toEqual({
+        console.time('t')
+        const ipData = findIPData(ip, ipRanges)
+        console.timeEnd('t')
+        expect(ipData).toEqual({
             ip,
             'country': {
                 'capital': 'Bucharest',
