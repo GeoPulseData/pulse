@@ -1,6 +1,6 @@
 {
 	"name": "geopulse",
-	"version": "0.0.15",
+	"version": "0.0.16",
 	"description": "Geolocation info based on user IP",
 	"scripts": {
 		"build": "tsc",

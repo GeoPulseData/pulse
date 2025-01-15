@@ -17,18 +17,41 @@ export interface IPRecord {
 
 
 export interface IPGeoPulse {
-    ip: string
-
-    country?: {
+    ip: string,
+    latitude: string,
+    longitude: string,
+    isMobile: string,
+    city: string,
+    state: string,
+    zip: string,
+    country: {
+        code: string,
+        name: string,
+        capital: string,
+        callingCode: string,
+        is_eu_member: string,
+        flag: {
+            svg: string,
+            emoji: string,
+        },
+    },
+    continent: {
+        name: string,
         code: string
-        name: string
-        capital: string
-        continentName: string
-    }
-
-    currency?: {
-        code: string
-        name: string
-        symbol: string
+    },
+    currency: {
+        code: string,
+        name: string,
+        symbol: string,
+        exchangeRate: string,
+    },
+    timeZone: {
+        "name": string,
+        localTime: string,
+        localTimeUnix: string,
+    },
+    language: {
+        code: string,
+        name: string,
     }
 }

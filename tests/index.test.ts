@@ -57,25 +57,52 @@ describe('reads ip data', () => {
         console.timeEnd('t')
         expect(ipData).toEqual({
             ip,
+            "city": "coming soon",
             'country': {
                 'capital': 'Bucharest',
                 'code': 'RO',
-                'continentName': 'Europe',
+                "callingCode": "coming soon",
+                'flag': {
+                    'emoji': 'coming soon',
+                    'svg': 'coming soon',
+                },
+                'is_eu_member': 'coming soon',
                 'name': 'Romania',
+            },
+            'continent': {
+                "code": "coming soon",
+                name: 'Europe'
             },
             'currency': {
                 'code': 'RON',
                 'name': 'coming soon',
+                "exchangeRate": "coming soon",
                 'symbol': 'coming soon',
             },
+            'isMobile': 'coming soon',
+            'language': {
+                'code': 'coming soon',
+                'name': 'coming soon',
+            },
+            'latitude': 'coming soon',
+            'longitude': 'coming soon',
+            'state': 'coming soon',
+            'timeZone': {
+                'localTime': 'coming soon',
+                'localTimeUnix': 'coming soon',
+                'name': 'coming soon',
+            },
+            'zip': 'coming soon',
         })
     })
 
     // test('ip data info', async () => {
-    //     const localLoader = () => cp(ipRangesPath, './tests/new-demo-ip-ranges.json')
-    //     const geoPulse = new GeoPulse('762eddc3-445c-45e0-8ebb-84a68ce8e760', localLoader)
+    //     const loader = () => cp('../ip-ranges.json', 'ip-ranges.json')
+    //     const geoPulse = new GeoPulse('762eddc3-445c-45e0-8ebb-84a68ce8e760', {loader})
     //     // await geoPulse.schedule()
-    //     const ip = '80.65.220.23'
+    //     // const ip = '80.65.220.23'
+    //     const ip = '84.232.193.5'
+    //     // const ip = '193.231.40.5'
     //     // const ip = '2a02:2f0d:2000:e800:2c6b:d2e3:23be:94f2'
     //     const info = await geoPulse.lookup(ip)
     //     console.log('info ->', info)

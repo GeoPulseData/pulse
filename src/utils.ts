@@ -67,16 +67,41 @@ export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Recor
 
     return {
         ip,
+        latitude: "coming soon",
+        longitude: "coming soon",
+        isMobile: "coming soon",
+        city: "coming soon",
+        state: "coming soon",
+        zip: "coming soon",
         country: {
             code: countryData.countryCode,
             name: countryData.countryName,
             capital: countryData.capital,
-            continentName: countryData.continentName,
+            callingCode: "coming soon",
+            is_eu_member: "coming soon",
+            flag: {
+                svg: 'coming soon',
+                emoji: "coming soon",
+            },
+        },
+        continent: {
+            name: countryData.continentName,
+            code: 'coming soon'
         },
         currency: {
             code: countryData.currencyCode,
             name: 'coming soon',
-            symbol: 'coming soon'
+            symbol: 'coming soon',
+            exchangeRate: "coming soon",
+        },
+        timeZone: {
+            "name": "coming soon",
+            localTime: "coming soon",
+            localTimeUnix: "coming soon",
+        },
+        language: {
+            code: "coming soon",
+            name: "coming soon"
         }
     }
 }
