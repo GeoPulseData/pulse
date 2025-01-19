@@ -1,6 +1,9 @@
 node_modules
 dist
 .idea
-ip-ranges.json
-ip-ranges.meta.json
+tests/ip-ranges.json
+!tests/data/ip-ranges.json
+tests/currency-rates.json
+!tests/data/currency-rates.json
+tests/ip-ranges.meta.json
 new-test-ip-ranges.json

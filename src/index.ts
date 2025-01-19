@@ -6,8 +6,6 @@ import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import { join } from 'node:path'
 
-export let ipRanges: {v4: IPv4Record[], v6: IPv6Record[]} | undefined
-
 interface Config {
     baseDirectory?: string
     dataFilename?: string
@@ -20,23 +18,32 @@ type AutoUpdateIsOn = {autoUpdate: true, autoUpdateMinutes?: number}
 type AutoUpdateIsOff = {autoUpdate?: false, autoUpdateMinutes?: never}
 
 export class GeoPulse {
+    ipRanges?: {v4: IPv4Record[], v6: IPv6Record[]}
+    currencyRates?: Record<string, number>
+
     readonly loader: () => void | Promise<void>
 
     constructor(APIKey: string, public config: Config & (AutoUpdateIsOn | AutoUpdateIsOff) = {
         baseDirectory: '.',
-        dataFilename: 'ip-ranges.json',
-        metaDataFilename: 'ip-ranges.meta.json',
     }) {
-        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.dataFilenamePath))
+        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath))
+
+    }
+
+    async init() {
         if (this.config.autoUpdate) {
+            if (this.config.autoUpdateMinutes && this.config.autoUpdateMinutes < 1) {
+                throw new Error('Cannot update data more than once every minute')
+            }
+
             const checkTime = async () => {
                 await this.checkDataFreshness(this.config.autoUpdateMinutes)
 
                 setTimeout(checkTime, 60 * 1000) // Schedule the next check after 1 minute
             }
-            checkTime().then()
+            await checkTime().then()
         } else {
-            this.checkDataFreshness(0).then()
+            await this.checkDataFreshness(0)
         }
     }
 
@@ -44,33 +51,52 @@ export class GeoPulse {
         return this.config.baseDirectory ?? './'
     }
 
-    get dataFilename() {
-        return this.config.dataFilename ?? 'ip-ranges.json'
+    get currencyRatesFilePath() {
+        return join(this.baseDirectory, this.config.dataFilename ?? 'currency-rates.json')
     }
 
-    get metaDataFilename() {
-        return this.config.metaDataFilename ?? 'ip-ranges.meta.json'
-    }
-
-    get dataFilenamePath() {
-        return join(this.baseDirectory, this.dataFilename)
+    get ipRangesFilePath() {
+        return join(this.baseDirectory, this.config.dataFilename ?? 'ip-ranges.json')
     }
 
     get metaDataFilenamePath() {
-        return join(this.baseDirectory, this.metaDataFilename)
+        return join(this.baseDirectory, this.config.metaDataFilename ?? 'ip-ranges.meta.json')
     }
 
-    async lookup(ip: string): Promise<IPGeoPulse | undefined> {
-        if (!ipRanges) {
-            await stat(this.dataFilenamePath).catch(() => this.checkDataFreshness(0))
-            ipRanges = optimizeRecords(await readData<IPRecord[]>(this.dataFilenamePath) ?? [])
+    async lookup(ip: string, baseCurrency = 'USD'): Promise<IPGeoPulse | undefined> {
+        if (!this.ipRanges) {
+            await stat(this.ipRangesFilePath).catch(() => this.checkDataFreshness(0))
+            this.ipRanges = optimizeRecords(await readData<IPRecord[]>(this.ipRangesFilePath) ?? [])
         }
 
-        if (!ipRanges) {
+        if (!this.currencyRates) {
+            await stat(this.currencyRatesFilePath).catch(() => this.checkDataFreshness(0))
+            this.currencyRates = await readData<Record<string, number>>(this.currencyRatesFilePath) ?? {}
+        }
+
+        if (!this.ipRanges) {
             return
         }
 
-        return findIPData(ip, ipRanges)
+        const ipData = findIPData(ip, this.ipRanges)
+        if (!ipData) {
+            return undefined
+        }
+
+        const countryCurrency = ipData.country.currency.code
+        //
+        const currencyRate = this.currencyRates[baseCurrency]
+        const countryCurrencyRate = this.currencyRates[countryCurrency]
+        //
+        const currencyExchangeDecimalPlaces = 1_000_00
+        console.log('cedmenzei mait ->', currencyRate, countryCurrencyRate)
+        return {
+            ...ipData,
+            exchangeRateBaseCurrency: baseCurrency,
+            exchangeRate: currencyRate && countryCurrencyRate ?
+                Math.round((countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces) / currencyExchangeDecimalPlaces
+                : 1,
+        }
 
         // If IP isn't in the RIPE or APNIC range, check ARIN
         // const whoisData = await fetchARINWHOIS(ip)
@@ -89,7 +115,7 @@ export class GeoPulse {
         const periodInMs = periodInMinutes * 60 * 1000 // Convert minutes to milliseconds
         const now = new Date()
 
-        const dataExists = await stat(this.dataFilenamePath).catch(() => false).then(() => true)
+        const dataExists = await stat(this.ipRangesFilePath).catch(() => false).then(() => true)
 
         // console.log('checking for data freshness ->', periodInMinutes, dataExists, now.getTime(), targetDate.getTime(), now.getTime() - targetDate.getTime(), periodInMs)
         if (!dataExists || now.getTime() - targetDate.getTime() >= periodInMs) {
@@ -107,7 +133,7 @@ export function localLoader(fromFilePath: string, toFilePath: string) {
     return fs.cp(fromFilePath, toFilePath)
 }
 
-export async function cloudLoader(key: string, filePath: string): Promise<void> {
+export async function loadIPBlocks(key: string, filePath: string) {
     try {
         const downloadUrlResponse = await fetch(`https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/ip-data-download-url?key=${encodeURIComponent(key)}`, {cache: 'no-cache'})
 
@@ -155,4 +181,16 @@ export async function cloudLoader(key: string, filePath: string): Promise<void> 
         console.error('Error downloading file:', error)
         throw error
     }
+
+}
+
+export async function loadCurrencyExchangeRates(key: string, filePath: string) {
+
+}
+
+export async function cloudLoader(key: string, filePath: string): Promise<void> {
+    await Promise.any([
+        loadIPBlocks(key, filePath),
+        loadCurrencyExchangeRates(key, filePath),
+    ])
 }

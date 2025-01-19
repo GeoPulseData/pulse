@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
-import currencies from './countries.json' with { type: 'json' }
+import countries from './countries.json' with { type: 'json' }
 
-const currencyMap = new Map(currencies.map(c => [c.countryCode, c]))
+const countriesMap = new Map(countries.map(c => [c.code, c]))
 
 export async function readData<T>(filePath: string): Promise<T | undefined> {
     try {
@@ -45,7 +45,7 @@ export function optimizeRecords(records: IPRecord[]) {
     }
 }
 
-export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Record[]}): IPGeoPulse | undefined {
+export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Record[]}): Omit<IPGeoPulse, 'exchangeRate' | 'exchangeRateBaseCurrency'> | undefined {
     let ipRecord: IPRecord | undefined
 
     if (ip.includes('.')) {
@@ -60,49 +60,26 @@ export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Recor
         return undefined
     }
 
-    const countryData = currencyMap.get(ipRecord.country)
+    const countryData = countriesMap.get(ipRecord.country)
     if (!countryData) {
         return undefined
     }
 
     return {
         ip,
-        latitude: "coming soon",
-        longitude: "coming soon",
-        isMobile: "coming soon",
-        city: "coming soon",
-        state: "coming soon",
-        zip: "coming soon",
-        country: {
-            code: countryData.countryCode,
-            name: countryData.countryName,
-            capital: countryData.capital,
-            callingCode: "coming soon",
-            is_eu_member: "coming soon",
-            flag: {
-                svg: 'coming soon',
-                emoji: "coming soon",
-            },
-        },
-        continent: {
-            name: countryData.continentName,
-            code: 'coming soon'
-        },
-        currency: {
-            code: countryData.currencyCode,
-            name: 'coming soon',
-            symbol: 'coming soon',
-            exchangeRate: "coming soon",
-        },
+        latitude: 'coming soon',
+        longitude: 'coming soon',
+        isMobile: 'coming soon',
+        city: 'coming soon',
+        state: 'coming soon',
+        zip: 'coming soon',
+
+        country: countryData,
         timeZone: {
-            "name": "coming soon",
-            localTime: "coming soon",
-            localTimeUnix: "coming soon",
+            'name': 'coming soon',
+            localTime: 'coming soon',
+            localTimeUnix: 'coming soon',
         },
-        language: {
-            code: "coming soon",
-            name: "coming soon"
-        }
     }
 }
 

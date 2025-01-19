@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest'
-import { findIPData, ipToNumber, optimizeRecords, readData } from '../src/utils.js'
+import { ipToNumber, optimizeRecords, readData } from '../src/utils.js'
 import { access, cp, rm } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { GeoPulse } from '../src/index.js'
 import type { IPRecord } from '../src/types.js'
 
-const ipRangesPath = './tests/demo-ip-ranges.json'
+const ipRangesPath = './tests/data/ip-ranges.json'
+const currenciesPath = './tests/data/currency-rates.json'
 
 describe('reads ip data', () => {
     test('tries to read the data and returns undefined if it does not exist', async () => {
@@ -13,16 +14,24 @@ describe('reads ip data', () => {
     })
 
     test('loads a fresh set of data', async () => {
-        const loader = () => cp(ipRangesPath, './tests/ip-ranges.json')
+        const loader = async () => {
+            await cp(ipRangesPath, './tests/ip-ranges.json')
+            await cp(currenciesPath, './tests/currency-rates.json')
+        }
 
         const geoPulse = new GeoPulse('TEST API KEY', {
             baseDirectory: './tests',
             loader
         })
-        await new Promise(resolve => setTimeout(resolve, 500)) // waiting for files to be written
+        await geoPulse.init()
 
         expect(
             await access('./tests/ip-ranges.json', constants.F_OK)
+                .then(() => true)
+                .catch(() => false)
+        ).toBe(true)
+        expect(
+            await access('./tests/currency-rates.json', constants.F_OK)
                 .then(() => true)
                 .catch(() => false)
         ).toBe(true)
@@ -45,55 +54,78 @@ describe('reads ip data', () => {
             endNum: ipToNumber('80.65.223.255'),
         })
 
-        await rm(geoPulse.dataFilenamePath, {force: true})
+        const currencyRates = await readData<Record<string, number>>('./tests/currency-rates.json') ?? []
+        expect(currencyRates).toHaveProperty('EUR')
+        expect(currencyRates).toHaveProperty('USD')
+        expect(currencyRates).toHaveProperty('RON')
+
+        await rm(geoPulse.ipRangesFilePath, {force: true})
+        await rm(geoPulse.currencyRatesFilePath, {force: true})
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 
     test('find the ip data', async () => {
-        const ipRanges = optimizeRecords(await readData<IPRecord[]>(ipRangesPath) ?? [])
+        const loader = () => {
+            cp(ipRangesPath, './tests/ip-ranges.json')
+            cp(currenciesPath, './tests/currency-rates.json')
+        }
+
+        const geoPulse = new GeoPulse('TEST API KEY', {
+            baseDirectory: './tests',
+            loader
+        })
+        await geoPulse.init()
+
+        // const ipRanges = optimizeRecords(await readData<IPRecord[]>(ipRangesPath) ?? [])
         const ip = '80.65.220.23'
         console.time('t')
-        const ipData = findIPData(ip, ipRanges)
+        const ipData = await geoPulse.lookup(ip)
         console.timeEnd('t')
         expect(ipData).toEqual({
             ip,
-            "city": "coming soon",
-            'country': {
-                'capital': 'Bucharest',
-                'code': 'RO',
-                "callingCode": "coming soon",
-                'flag': {
-                    'emoji': 'coming soon',
-                    'svg': 'coming soon',
+            latitude: 'coming soon',
+            longitude: 'coming soon',
+            isMobile: 'coming soon',
+            city: 'coming soon',
+            state: 'coming soon',
+            zip: 'coming soon',
+            exchangeRateBaseCurrency: 'USD',
+            exchangeRate: 4.83249,
+            country: {
+                name: 'Romania',
+                code: 'RO',
+                capital: 'Bucharest',
+                callingCode: '+40',
+                isEUMember: false,
+                currency: {
+                    code: 'RON',
+                    name: 'Romanian leu',
+                    symbol: 'lei'
                 },
-                'is_eu_member': 'coming soon',
-                'name': 'Romania',
+                flag: {
+                    png: 'https://flagcdn.com/w320/ro.png',
+                    svg: 'https://flagcdn.com/ro.svg',
+                    emoji: '🇷🇴'
+                },
+                continent: {
+                    name: 'Europe',
+                    code: ''
+                },
+                language: {
+                    name: 'Romanian',
+                    code: 'ron'
+                }
             },
-            'continent': {
-                "code": "coming soon",
-                name: 'Europe'
+            timeZone: {
+                localTime: 'coming soon',
+                localTimeUnix: 'coming soon',
+                name: 'coming soon',
             },
-            'currency': {
-                'code': 'RON',
-                'name': 'coming soon',
-                "exchangeRate": "coming soon",
-                'symbol': 'coming soon',
-            },
-            'isMobile': 'coming soon',
-            'language': {
-                'code': 'coming soon',
-                'name': 'coming soon',
-            },
-            'latitude': 'coming soon',
-            'longitude': 'coming soon',
-            'state': 'coming soon',
-            'timeZone': {
-                'localTime': 'coming soon',
-                'localTimeUnix': 'coming soon',
-                'name': 'coming soon',
-            },
-            'zip': 'coming soon',
         })
+
+        await rm(geoPulse.ipRangesFilePath, {force: true})
+        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 
     // test('ip data info', async () => {
@@ -107,5 +139,4 @@ describe('reads ip data', () => {
     //     const info = await geoPulse.lookup(ip)
     //     console.log('info ->', info)
     // }, {timeout: 60000000})
-
 })

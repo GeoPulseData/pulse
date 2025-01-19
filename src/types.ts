@@ -8,13 +8,36 @@ export interface IPv6Record extends IPRecord {
     endNum: bigint
 }
 
-
 export interface IPRecord {
     start: string
     end: string
     country: string
 }
 
+export interface Country {
+    name: string
+    code: string
+    capital: string
+    callingCode: string
+    isEUMember: boolean
+    currency: {
+        code: string;
+        name: string;
+        symbol: string;
+    };
+    flag: {
+        svg: string;
+        emoji: string
+    }
+    continent: {
+        name: string;
+        code: string;
+    }
+    language: {
+        name: string;
+        code: string
+    }
+}
 
 export interface IPGeoPulse {
     ip: string,
@@ -24,34 +47,12 @@ export interface IPGeoPulse {
     city: string,
     state: string,
     zip: string,
-    country: {
-        code: string,
-        name: string,
-        capital: string,
-        callingCode: string,
-        is_eu_member: string,
-        flag: {
-            svg: string,
-            emoji: string,
-        },
-    },
-    continent: {
-        name: string,
-        code: string
-    },
-    currency: {
-        code: string,
-        name: string,
-        symbol: string,
-        exchangeRate: string,
-    },
+    country: Country,
+    exchangeRateBaseCurrency: string,
+    exchangeRate: number,
     timeZone: {
-        "name": string,
+        name: string,
         localTime: string,
         localTimeUnix: string,
     },
-    language: {
-        code: string,
-        name: string,
-    }
 }
