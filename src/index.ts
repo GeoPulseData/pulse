@@ -1,3 +1,4 @@
+import xml from 'simple-xml-to-json'
 import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
 import { findIPData, optimizeRecords, readData } from './utils.js'
 import fs, { stat, writeFile } from 'node:fs/promises'
@@ -26,7 +27,7 @@ export class GeoPulse {
     constructor(APIKey: string, public config: Config & (AutoUpdateIsOn | AutoUpdateIsOff) = {
         baseDirectory: '.',
     }) {
-        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath))
+        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath, this.currencyRatesFilePath))
 
     }
 
@@ -64,13 +65,13 @@ export class GeoPulse {
     }
 
     async lookup(ip: string, baseCurrency = 'USD'): Promise<IPGeoPulse | undefined> {
-        if (!this.ipRanges) {
-            await stat(this.ipRangesFilePath).catch(() => this.checkDataFreshness(0))
-            this.ipRanges = optimizeRecords(await readData<IPRecord[]>(this.ipRangesFilePath) ?? [])
-        }
-
-        if (!this.currencyRates) {
-            await stat(this.currencyRatesFilePath).catch(() => this.checkDataFreshness(0))
+        if (!this.ipRanges || !this.currencyRates) {
+            await Promise.all([
+                stat(this.ipRangesFilePath),
+                stat(this.currencyRatesFilePath)
+            ]).catch(() => this.checkDataFreshness(0))
+            const mataaa = await readData<IPRecord[]>(this.ipRangesFilePath) ?? []
+            this.ipRanges = optimizeRecords(mataaa)
             this.currencyRates = await readData<Record<string, number>>(this.currencyRatesFilePath) ?? {}
         }
 
@@ -84,12 +85,11 @@ export class GeoPulse {
         }
 
         const countryCurrency = ipData.country.currency.code
-        //
         const currencyRate = this.currencyRates[baseCurrency]
         const countryCurrencyRate = this.currencyRates[countryCurrency]
-        //
+
         const currencyExchangeDecimalPlaces = 1_000_00
-        console.log('cedmenzei mait ->', currencyRate, countryCurrencyRate)
+
         return {
             ...ipData,
             exchangeRateBaseCurrency: baseCurrency,
@@ -185,12 +185,34 @@ export async function loadIPBlocks(key: string, filePath: string) {
 }
 
 export async function loadCurrencyExchangeRates(key: string, filePath: string) {
+    // TODO, maybe use S3 for this just as IPBlocks
+    const url = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
 
+    try {
+        // Fetch XML data from ECB
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`Failed to fetch data: ${response.statusText}`)
+        const xmlData = await response.text()
+
+        const jsonData = xml.convertXML(xmlData)
+
+        const rates: Record<string, number> = {EUR: 1}
+        jsonData['gesmes:Envelope'].children[2].Cube.children[0].Cube.children.forEach((item: any) => {
+            rates[item.Cube.currency] = parseFloat(item.Cube.rate)
+        })
+
+        // await makeSureDirectoriesExist(filePath);
+        await fs.writeFile(filePath, JSON.stringify(rates, null, 2), 'utf8');
+
+        console.log(`Exchange rates saved to ${filePath}`)
+    } catch (error) {
+        console.error('Error fetching or saving ECB rates:', error)
+    }
 }
 
-export async function cloudLoader(key: string, filePath: string): Promise<void> {
-    await Promise.any([
-        loadIPBlocks(key, filePath),
-        loadCurrencyExchangeRates(key, filePath),
+export async function cloudLoader(key: string, ipRangesFilePage: string, currencyRatesFilePath: string): Promise<void> {
+    await Promise.all([
+        loadIPBlocks(key, ipRangesFilePage),
+        loadCurrencyExchangeRates(key, currencyRatesFilePath),
     ])
 }
