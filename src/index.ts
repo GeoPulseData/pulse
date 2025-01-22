@@ -1,10 +1,10 @@
 import xml from 'simple-xml-to-json'
 import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
-import { findIPData, optimizeRecords, readData } from './utils.js'
+import { countriesMap, findIPData, optimizeRecords, readData } from './utils.js'
 import fs, { stat, writeFile } from 'node:fs/promises'
-import { Readable } from 'stream'
-import { createWriteStream } from 'fs'
-import { pipeline } from 'stream/promises'
+import { Readable } from 'node:stream'
+import { createWriteStream } from 'node:fs'
+import { pipeline } from 'node:stream/promises'
 import { join } from 'node:path'
 
 interface Config {
@@ -19,6 +19,7 @@ type AutoUpdateIsOn = {autoUpdate: true, autoUpdateMinutes?: number}
 type AutoUpdateIsOff = {autoUpdate?: false, autoUpdateMinutes?: never}
 
 export class GeoPulse {
+    metadata?: {lastRun: string}
     ipRanges?: {v4: IPv4Record[], v6: IPv6Record[]}
     currencyRates?: Record<string, number>
 
@@ -28,7 +29,6 @@ export class GeoPulse {
         baseDirectory: '.',
     }) {
         this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath, this.currencyRatesFilePath))
-
     }
 
     async init() {
@@ -64,16 +64,26 @@ export class GeoPulse {
         return join(this.baseDirectory, this.config.metaDataFilename ?? 'ip-ranges.meta.json')
     }
 
-    async lookup(ip: string, baseCurrency = 'USD'): Promise<IPGeoPulse | undefined> {
-        if (!this.ipRanges || !this.currencyRates) {
-            await Promise.all([
-                stat(this.ipRangesFilePath),
-                stat(this.currencyRatesFilePath)
-            ]).catch(() => this.checkDataFreshness(0))
-            const mataaa = await readData<IPRecord[]>(this.ipRangesFilePath) ?? []
-            this.ipRanges = optimizeRecords(mataaa)
-            this.currencyRates = await readData<Record<string, number>>(this.currencyRatesFilePath) ?? {}
+    private async loadData() {
+        if (this.ipRanges && this.currencyRates) {
+            return
         }
+
+        if(!this.metadata){
+            await this.checkDataFreshness(0)
+        }
+
+        await Promise.all([
+            stat(this.ipRangesFilePath),
+            stat(this.currencyRatesFilePath)
+        ]).catch(() => this.checkDataFreshness(0))
+
+        this.ipRanges = optimizeRecords(await readData<IPRecord[]>(this.ipRangesFilePath) ?? [])
+        this.currencyRates = await readData<Record<string, number>>(this.currencyRatesFilePath) ?? {}
+    }
+
+    async lookup(ip: string, baseCurrency = 'USD'): Promise<IPGeoPulse | undefined> {
+        await this.loadData()
 
         if (!this.ipRanges) {
             return
@@ -85,8 +95,8 @@ export class GeoPulse {
         }
 
         const countryCurrency = ipData.country.currency.code
-        const currencyRate = this.currencyRates[baseCurrency]
-        const countryCurrencyRate = this.currencyRates[countryCurrency]
+        const currencyRate = this.currencyRates?.[baseCurrency]
+        const countryCurrencyRate = this.currencyRates?.[countryCurrency]
 
         const currencyExchangeDecimalPlaces = 1_000_00
 
@@ -106,14 +116,46 @@ export class GeoPulse {
         // }
     }
 
+    async exchangeRates(baseCurrency = 'USD') {
+        await this.loadData()
+
+        if (!this.currencyRates) {
+            return {}
+        }
+
+        // EUR is the default currency rate based on the service we use
+        const baseCurrencyRate = (this.currencyRates.EUR as number) / (this.currencyRates[baseCurrency] as number)
+
+        const exchangeRatesBasedOnBaseCurrency: Record<string, number> = {}
+        Object.keys(this.currencyRates).forEach(currencyCode => {
+            exchangeRatesBasedOnBaseCurrency[currencyCode] = (this.currencyRates?.[currencyCode] as number) * baseCurrencyRate
+        })
+
+        return exchangeRatesBasedOnBaseCurrency
+    }
+
+    countries(){
+        return Array.from(countriesMap.values())
+    }
+
+    country(code: string){
+        return countriesMap.get(code)
+    }
+
+    countriesMappedByCode(){
+        return countriesMap
+    }
+
     private async checkDataFreshness(periodInMinutes = 60 * 24) {
-        const meta = await readData<{lastRun: string}>(this.metaDataFilenamePath)
+        const meta = this.metadata ?? (this.metadata = await readData<{lastRun: string}>(this.metaDataFilenamePath))
         const lastRun = meta?.lastRun
         const targetDate = lastRun && !isNaN(new Date(lastRun).getTime())
             ? new Date(lastRun)
             : new Date(0)
+
         const periodInMs = periodInMinutes * 60 * 1000 // Convert minutes to milliseconds
         const now = new Date()
+        console.log('diff ->', targetDate, now,now.getTime() - targetDate.getTime())
 
         const dataExists = await stat(this.ipRangesFilePath).catch(() => false).then(() => true)
 
@@ -125,6 +167,9 @@ export class GeoPulse {
                 ...meta,
                 lastRun: new Date,
             }, null, 2), 'utf8')
+
+            //reload the metadata after we update it
+            this.metadata = await readData<{lastRun: string}>(this.metaDataFilenamePath)
         }
     }
 }
@@ -202,7 +247,7 @@ export async function loadCurrencyExchangeRates(key: string, filePath: string) {
         })
 
         // await makeSureDirectoriesExist(filePath);
-        await fs.writeFile(filePath, JSON.stringify(rates, null, 2), 'utf8');
+        await fs.writeFile(filePath, JSON.stringify(rates, null, 2), 'utf8')
 
         console.log(`Exchange rates saved to ${filePath}`)
     } catch (error) {

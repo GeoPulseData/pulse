@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
 import countries from './countries.json' with { type: 'json' }
 
-const countriesMap = new Map(countries.map(c => [c.code, c]))
+export const countriesMap = new Map(countries.map(c => [c.code, c]))
 
 export async function readData<T>(filePath: string): Promise<T | undefined> {
     try {

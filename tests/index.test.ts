@@ -1,9 +1,10 @@
-import { describe, expect, test } from 'vitest'
+import { afterAll, beforeEach, describe, expect, test } from 'vitest'
 import { ipToNumber, optimizeRecords, readData } from '../src/utils.js'
 import { access, cp, rm } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { GeoPulse } from '../src/index.js'
 import type { IPRecord } from '../src/types.js'
+import countries from '../src/countries.json' with { type: 'json' }
 
 const ipRangesPath = './tests/data/ip-ranges.json'
 const currenciesPath = './tests/data/currency-rates.json'
@@ -139,4 +140,80 @@ describe('reads ip data', () => {
         const info = await geoPulse.lookup(ip)
         console.log('info ->', info)
     }, {timeout: 60000000})
+})
+
+describe('exchange rate', () => {
+    let geoPulse: GeoPulse
+    let allExchangeRates: Record<string, number>
+    beforeEach(async () => {
+        const loader = () => {
+            cp(ipRangesPath, './tests/ip-ranges.json')
+            cp(currenciesPath, './tests/currency-rates.json')
+        }
+
+        geoPulse = new GeoPulse('TEST API KEY', {
+            baseDirectory: './tests',
+            loader
+        })
+        await geoPulse.init()
+        allExchangeRates = (await readData('./tests/currency-rates.json')) as Record<string, number>
+    })
+
+    test('shows all exchange rates in EUR', async () => {
+        const exchangeRates = await geoPulse.exchangeRates('EUR')
+
+        expect(exchangeRates).toEqual(allExchangeRates)
+    })
+
+    test('shows all exchange rates in default base currency: USD', async () => {
+        const baseCurrencyRate = (allExchangeRates.EUR as number) / (allExchangeRates.USD as number)
+        const exchangeRates = await geoPulse.exchangeRates()
+
+        const USDBasedExchangeRates: Record<string, number> = {}
+        Object.keys(allExchangeRates).forEach(currencyCode => {
+            USDBasedExchangeRates[currencyCode] = (allExchangeRates[currencyCode] as number) * baseCurrencyRate
+        })
+        expect(exchangeRates).toEqual(USDBasedExchangeRates)
+    })
+
+    test('shows all exchange rates in some random currency: RON', async () => {
+        const baseCurrencyRate = (allExchangeRates.EUR as number) / (allExchangeRates.RON as number)
+        const exchangeRates = await geoPulse.exchangeRates('RON')
+
+        const USDBasedExchangeRates: Record<string, number> = {}
+        Object.keys(allExchangeRates).forEach(currencyCode => {
+            USDBasedExchangeRates[currencyCode] = (allExchangeRates[currencyCode] as number) * baseCurrencyRate
+        })
+        expect(exchangeRates).toEqual(USDBasedExchangeRates)
+    })
+})
+
+describe('countries', () => {
+    let geoPulse = new GeoPulse('')
+    let allCountries = countries
+
+    test('shows all countries', async () => {
+        const countries = geoPulse.countries()
+
+        expect(countries).toEqual(allCountries)
+    })
+
+    test('shows all countries mapped by country code', async () => {
+        const countries = geoPulse.countriesMappedByCode()
+
+        expect(countries).toEqual(new Map(allCountries.map(c => [c.code, c])))
+    })
+
+    test('returns info about one country', async () => {
+        const unitedStates = geoPulse.country('US')
+
+        expect(unitedStates).toEqual(allCountries.find(country => country.code === 'US'))
+    })
+
+    afterAll(async () => {
+
+        await rm(geoPulse.ipRangesFilePath, {force: true})
+        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.metaDataFilenamePath, {force: true})
+    })
 })

@@ -13,6 +13,9 @@
     "npm:geopulse@0.0.19": "0.0.19",
     "npm:geopulse@0.0.20": "0.0.20",
     "npm:geopulse@0.0.21": "0.0.21",
+    "npm:geopulse@0.0.22": "0.0.22",
+    "npm:geopulse@0.0.23": "0.0.23",
+    "npm:geopulse@0.0.24": "0.0.24",
     "npm:uuid@*": "11.0.3"
   },
   "jsr": {
@@ -56,6 +59,24 @@
     },
     "geopulse@0.0.21": {
       "integrity": "sha512-WbwA4aO96wg+FjIGp/w7oNbJKbCkvSOc5PMPvXNDEDSeC846fi0+jaZf5Y2Qodfj2D0ViFL5HyhMOws4OdXpAQ==",
+      "dependencies": [
+        "simple-xml-to-json"
+      ]
+    },
+    "geopulse@0.0.22": {
+      "integrity": "sha512-hXtIw0+IEdK1LpBf+kyXVxYBvLv5+CTBUzEDTzHVYtkPSz+nPXS6+PrlDd8ctDaVOtlv8EcL7S1BxvHWQl2hQg==",
+      "dependencies": [
+        "simple-xml-to-json"
+      ]
+    },
+    "geopulse@0.0.23": {
+      "integrity": "sha512-2Pkla2jBDts3Z4Rj6KiUEtKn1ij/8eITJSo8i4QQ5W96g2Q6rJrfEUENN36MCOZ5pXSHtIA4Nw+L2JnED65ADQ==",
+      "dependencies": [
+        "simple-xml-to-json"
+      ]
+    },
+    "geopulse@0.0.24": {
+      "integrity": "sha512-SoT6Rfyp8fHvJxofRULzszlJwV+Ylibbq02apDGc5AQI3LdgmyXs0Tt5TMRmfcDecN+ya3LdVav+84i1EK9Dpg==",
       "dependencies": [
         "simple-xml-to-json"
       ]
