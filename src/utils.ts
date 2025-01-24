@@ -45,6 +45,7 @@ export function optimizeRecords(records: IPRecord[]) {
     }
 }
 
+const hardcodedEUCountries = ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"]
 export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Record[]}): Omit<IPGeoPulse, 'exchangeRate' | 'exchangeRateBaseCurrency'> | undefined {
     let ipRecord: IPRecord | undefined
 
@@ -64,6 +65,8 @@ export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Recor
     if (!countryData) {
         return undefined
     }
+
+    countryData.isEUMember = hardcodedEUCountries.includes(countryData.code)
 
     return {
         ip,

@@ -97,7 +97,7 @@ describe('reads ip data', () => {
                 code: 'RO',
                 capital: 'Bucharest',
                 callingCode: '+40',
-                isEUMember: false,
+                isEUMember: true,
                 currency: {
                     code: 'RON',
                     name: 'Romanian leu',
@@ -129,17 +129,17 @@ describe('reads ip data', () => {
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 
-    test('ip data info', async () => {
-        const geoPulse = new GeoPulse('45bcf6ed-457f-4002-b474-f730a18f803c')
-        await geoPulse.init()
-        // await geoPulse.schedule()
-        // const ip = '80.65.220.23'
-        const ip = '84.232.193.5'
-        // const ip = '193.231.40.5'
-        // const ip = '2a02:2f0d:2000:e800:2c6b:d2e3:23be:94f2'
-        const info = await geoPulse.lookup(ip)
-        console.log('info ->', info)
-    }, {timeout: 60000000})
+    // test('ip data info', async () => {
+    //     const geoPulse = new GeoPulse('45bcf6ed-457f-4002-b474-f730a18f803c')
+    //     await geoPulse.init()
+    //     // await geoPulse.schedule()
+    //     // const ip = '80.65.220.23'
+    //     const ip = '84.232.193.5'
+    //     // const ip = '193.231.40.5'
+    //     // const ip = '2a02:2f0d:2000:e800:2c6b:d2e3:23be:94f2'
+    //     const info = await geoPulse.lookup(ip)
+    //     console.log('info ->', info)
+    // }, {timeout: 60000000})
 })
 
 describe('exchange rate', () => {
