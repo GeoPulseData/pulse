@@ -158,7 +158,7 @@ export class GeoPulse {
 
         const periodInMs = periodInMinutes * 60 * 1000 // Convert minutes to milliseconds
         const now = new Date()
-        console.log('diff ->', targetDate, now,now.getTime() - targetDate.getTime())
+        // console.log('diff ->', targetDate, now,now.getTime() - targetDate.getTime())
 
         const dataExists = await stat(this.ipRangesFilePath).catch(() => false).then(() => true)
 
