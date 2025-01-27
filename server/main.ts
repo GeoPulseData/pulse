@@ -1,8 +1,8 @@
-import { GeoPulse } from 'npm:geopulse@0.0.29'
+import { GeoPulse } from 'npm:geopulse@0.0.31'
 import { parseArgs } from 'jsr:@std/cli/parse-args'
 
 const flags = parseArgs(Deno.args, {
-    string: ['key', 'port'],
+    string: ['key', 'port', 'downloadURL'],
     boolean: ['server'],
     default: { port: 8090 },
 })
@@ -23,7 +23,7 @@ if (!geopulseAPIKey) {
     }
 }
 
-const geopulse = new GeoPulse(geopulseAPIKey, { autoUpdate: true, downloadHostURL: Deno.env.get('GEOPULSE_DOWNLOAD_HOST_URL') })
+const geopulse = new GeoPulse(geopulseAPIKey, { autoUpdate: true, downloadHostURL: flags.downloadURL })
 geopulse.init().then()
 
 Deno.serve({ port }, async (request) => {

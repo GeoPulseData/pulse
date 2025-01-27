@@ -1,6 +1,7 @@
 node_modules
 dist
 .idea
+.geopulse
 tests/ip-ranges.json
 !tests/data/ip-ranges.json
 tests/currency-rates.json

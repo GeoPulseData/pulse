@@ -1,12 +1,12 @@
 {
 	"tasks": {
-		"dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch main.ts",
-		"compile": "deno compile  --allow-net --allow-env --allow-read --allow-write --output ../binaries/GeoPulse main.ts",
-		"compile-macos-x86": "deno compile --target x86_64-apple-darwin --allow-net --allow-env --allow-read --allow-write --output ../binaries/GeoPulse-macos-x86 main.ts",
-		"compile-macos-arm": "deno compile --target aarch64-apple-darwin --allow-net --allow-env --allow-read --allow-write --output ../binaries/GeoPulse-macos-arm main.ts",
-		"compile-linux-x86": "deno compile --target x86_64-unknown-linux-gnu --allow-net --allow-env --allow-read --allow-write --output ../binaries/GeoPulse-linux-x86 main.ts",
-		"compile-linux-arm": "deno compile --target aarch64-unknown-linux-gnu --allow-net --allow-env --allow-read --allow-write --output ../binaries/GeoPulse-linux-arm main.ts",
-		"compile-windows": "deno compile --target x86_64-pc-windows-msvc --allow-net --allow-env --allow-read --allow-write --output ../binaries/GeoPulse-windows main.ts",
+		"dev": "deno run --allow-net --allow-read --allow-write --watch main.ts --downloadURL=https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com",
+		"compile": "deno compile  --allow-net --allow-read --allow-write --output ../binaries/GeoPulse main.ts",
+		"compile-macos-x86": "deno compile --target x86_64-apple-darwin --allow-net --allow-read --allow-write --output ../binaries/GeoPulse-macos-x86 main.ts",
+		"compile-macos-arm": "deno compile --target aarch64-apple-darwin --allow-net --allow-read --allow-write --output ../binaries/GeoPulse-macos-arm main.ts",
+		"compile-linux-x86": "deno compile --target x86_64-unknown-linux-gnu --allow-net --allow-read --allow-write --output ../binaries/GeoPulse-linux-x86 main.ts",
+		"compile-linux-arm": "deno compile --target aarch64-unknown-linux-gnu --allow-net --allow-read --allow-write --output ../binaries/GeoPulse-linux-arm main.ts",
+		"compile-windows": "deno compile --target x86_64-pc-windows-msvc --allow-net --allow-read --allow-write --output ../binaries/GeoPulse-windows main.ts",
 		"compile:all": "deno run compile-macos-x86 && deno run compile-macos-arm && deno run compile-linux-x86 && deno run compile-linux-arm && deno run compile-windows"
 	},
 	"imports": {
