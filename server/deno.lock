@@ -18,6 +18,7 @@
     "npm:geopulse@0.0.24": "0.0.24",
     "npm:geopulse@0.0.25": "0.0.25",
     "npm:geopulse@0.0.26": "0.0.26",
+    "npm:geopulse@0.0.27": "0.0.27",
     "npm:uuid@*": "11.0.3"
   },
   "jsr": {
@@ -91,6 +92,12 @@
     },
     "geopulse@0.0.26": {
       "integrity": "sha512-rv9Abk3BG3O/0EPR3u8PZ4pECMDNGgK/5lrG+YvHDtpt5EXNSuIqZARcC2w/3s7X4eQR95Pksd/vmqnJXuknag==",
+      "dependencies": [
+        "simple-xml-to-json"
+      ]
+    },
+    "geopulse@0.0.27": {
+      "integrity": "sha512-Gg/TjGLXZBPFg2aggUePj8LVgvIRg+XdWLYP+AOCT2mZdCdJgTlVKZrJGXL64YAZXDu+A8TTbwXMP/87wMpzFA==",
       "dependencies": [
         "simple-xml-to-json"
       ]

@@ -1,4 +1,4 @@
-import { GeoPulse } from 'npm:geopulse@0.0.26'
+import { GeoPulse } from 'npm:geopulse@0.0.27'
 import { parseArgs } from 'jsr:@std/cli/parse-args'
 
 const flags = parseArgs(Deno.args, {
