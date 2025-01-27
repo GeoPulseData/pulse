@@ -7,3 +7,4 @@ tests/currency-rates.json
 !tests/data/currency-rates.json
 tests/ip-ranges.meta.json
 new-test-ip-ranges.json
+.env

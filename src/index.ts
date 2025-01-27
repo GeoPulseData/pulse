@@ -13,6 +13,7 @@ interface Config {
     metaDataFilename?: string
     loader?: () => void
     autoUpdate?: boolean
+    downloadHostURL?: string
 }
 
 type AutoUpdateIsOn = {autoUpdate: true, autoUpdateMinutes?: number}
@@ -28,7 +29,7 @@ export class GeoPulse {
     constructor(APIKey: string, public config: Config & (AutoUpdateIsOn | AutoUpdateIsOff) = {
         baseDirectory: '.',
     }) {
-        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath, this.currencyRatesFilePath))
+        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath, this.currencyRatesFilePath, this.config.downloadHostURL))
     }
 
     async init() {
@@ -69,7 +70,7 @@ export class GeoPulse {
             return
         }
 
-        if(!this.metadata){
+        if (!this.metadata) {
             await this.checkDataFreshness(0)
         }
 
@@ -96,7 +97,7 @@ export class GeoPulse {
 
         const countryCurrency = ipData.country.currency?.code
         const currencyRate = countryCurrency ? this.currencyRates?.[baseCurrency] : undefined
-        const countryCurrencyRate = countryCurrency ? this.currencyRates?.[countryCurrency]: undefined
+        const countryCurrencyRate = countryCurrency ? this.currencyRates?.[countryCurrency] : undefined
 
         const currencyExchangeDecimalPlaces = 1_000_00
 
@@ -105,7 +106,7 @@ export class GeoPulse {
             exchangeRate: currencyRate && countryCurrencyRate ?
                 Math.round((countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces) / currencyExchangeDecimalPlaces
                 : 1,
-        }: undefined
+        } : undefined
         return {
             ...ipData,
             ...exchangeRate
@@ -137,15 +138,15 @@ export class GeoPulse {
         return exchangeRatesBasedOnBaseCurrency
     }
 
-    countries(){
+    countries() {
         return Array.from(countriesMap.values())
     }
 
-    country(code: string){
+    country(code: string) {
         return countriesMap.get(code)
     }
 
-    countriesMappedByCode(){
+    countriesMappedByCode() {
         return countriesMap
     }
 
@@ -181,9 +182,13 @@ export function localLoader(fromFilePath: string, toFilePath: string) {
     return fs.cp(fromFilePath, toFilePath)
 }
 
-export async function loadIPBlocks(key: string, filePath: string) {
+export async function loadIPBlocks(key: string, filePath: string, downloadHostURL?: string) {
+    downloadHostURL = downloadHostURL ?? 'https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/production'
+
     try {
-        const downloadUrlResponse = await fetch(`https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/ip-data-download-url?key=${encodeURIComponent(key)}`, {cache: 'no-cache'})
+        const url = `${downloadHostURL}/ip-data-download-url?key=${encodeURIComponent(key)}`
+
+        const downloadUrlResponse = await fetch(url, {cache: 'no-cache'})
 
         if (!downloadUrlResponse.ok) {
             throw new Error(`Failed to get download URL: ${downloadUrlResponse.statusText} - ${await downloadUrlResponse.text()}`)
@@ -232,7 +237,7 @@ export async function loadIPBlocks(key: string, filePath: string) {
 
 }
 
-export async function loadCurrencyExchangeRates(key: string, filePath: string) {
+export async function loadCurrencyExchangeRates(key: string, filePath: string, downloadHostURL?: string) {
     // TODO, maybe use S3 for this just as IPBlocks
     const url = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
 
@@ -258,9 +263,9 @@ export async function loadCurrencyExchangeRates(key: string, filePath: string) {
     }
 }
 
-export async function cloudLoader(key: string, ipRangesFilePage: string, currencyRatesFilePath: string): Promise<void> {
+export async function cloudLoader(key: string, ipRangesFilePage: string, currencyRatesFilePath: string, downloadHostURL?: string): Promise<void> {
     await Promise.all([
-        loadIPBlocks(key, ipRangesFilePage),
-        loadCurrencyExchangeRates(key, currencyRatesFilePath),
+        loadIPBlocks(key, ipRangesFilePage, downloadHostURL),
+        loadCurrencyExchangeRates(key, currencyRatesFilePath, downloadHostURL),
     ])
 }
