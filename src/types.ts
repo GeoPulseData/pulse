@@ -20,7 +20,7 @@ export interface Country {
     capital: string
     callingCode: string
     isEUMember: boolean
-    currency: {
+    currency?: {
         code: string;
         name: string;
         symbol: string;
@@ -41,16 +41,18 @@ export interface Country {
 
 export interface IPGeoPulse {
     ip: string,
-    latitude: string,
-    longitude: string,
-    isMobile: string,
-    city: string,
-    state: string,
-    zip: string,
+
+    latitude?: string,
+    longitude?: string,
+    isMobile?: string,
+    city?: string,
+    state?: string,
+    zip?: string,
+
     country: Country,
-    exchangeRateBaseCurrency: string,
-    exchangeRate: number,
-    timeZone: {
+    exchangeRateBaseCurrency?: string,
+    exchangeRate?: number,
+    timeZone?: {
         name: string,
         localTime: string,
         localTimeUnix: string,

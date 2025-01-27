@@ -94,18 +94,21 @@ export class GeoPulse {
             return undefined
         }
 
-        const countryCurrency = ipData.country.currency.code
-        const currencyRate = this.currencyRates?.[baseCurrency]
-        const countryCurrencyRate = this.currencyRates?.[countryCurrency]
+        const countryCurrency = ipData.country.currency?.code
+        const currencyRate = countryCurrency ? this.currencyRates?.[baseCurrency] : undefined
+        const countryCurrencyRate = countryCurrency ? this.currencyRates?.[countryCurrency]: undefined
 
         const currencyExchangeDecimalPlaces = 1_000_00
 
-        return {
-            ...ipData,
+        const exchangeRate = countryCurrency ? {
             exchangeRateBaseCurrency: baseCurrency,
             exchangeRate: currencyRate && countryCurrencyRate ?
                 Math.round((countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces) / currencyExchangeDecimalPlaces
                 : 1,
+        }: undefined
+        return {
+            ...ipData,
+            ...exchangeRate
         }
 
         // If IP isn't in the RIPE or APNIC range, check ARIN

@@ -110,7 +110,7 @@ describe('reads ip data', () => {
                 },
                 continent: {
                     name: 'Europe',
-                    code: ''
+                    code: 'EU'
                 },
                 language: {
                     name: 'Romanian',
