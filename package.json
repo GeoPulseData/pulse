@@ -1,12 +1,11 @@
 {
 	"name": "geopulse",
-	"version": "0.0.31",
+	"version": "0.0.34",
 	"description": "Geolocation info based on user IP",
 	"scripts": {
-		"build": "tsc",
+		"build": "tsc --watch",
 		"test": "vitest run",
-		"server": "cd server && deno run dev",
-		"process": "tsc && node dist/country.process.js"
+		"server": "cd server && deno run dev"
 	},
 	"main": "dist/index.js",
 	"keywords": [

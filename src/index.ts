@@ -54,7 +54,7 @@ export class GeoPulse {
     }
 
     get currencyRatesFilePath() {
-        return join(this.baseDirectory, this.config.dataFilename ?? 'currency-rates.json')
+        return join(this.baseDirectory, this.config.dataFilename ?? 'exchange-rates.json')
     }
 
     get ipRangesFilePath() {
@@ -182,7 +182,8 @@ export function localLoader(fromFilePath: string, toFilePath: string) {
     return fs.cp(fromFilePath, toFilePath)
 }
 
-export async function loadIPBlocks(key: string, filePath: string, downloadHostURL?: string) {
+export async function loadIPBlocks(key: string, filePath: string, exchangeRatesFilePath: string, downloadHostURL?: string) {
+    console.log(`Getting the database download URLs`)
     downloadHostURL = downloadHostURL ?? 'https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/production'
 
     try {
@@ -198,74 +199,63 @@ export async function loadIPBlocks(key: string, filePath: string, downloadHostUR
             throw new Error('Download URL: Response body is null')
         }
 
-        const {downloadURL} = await downloadUrlResponse.json()
-        const fileResponse = await fetch(downloadURL, {cache: 'no-cache'})
+        const {databases} = await downloadUrlResponse.json()
 
-        if (!fileResponse.ok) {
-            throw new Error(`Failed to download file: ${fileResponse.statusText} - ${await fileResponse.text()}`)
+        console.log(`Starting to download the databases`)
+
+        const [ipResponse, exchangeRatesResponse] = await Promise.all([
+            fetch(databases.ip, {cache: 'no-cache'}),
+            databases['exchange-rates'] ? fetch(databases['exchange-rates'], {cache: 'no-cache'}) : undefined,
+        ])
+
+        if (!ipResponse.ok) {
+            throw new Error(`Failed to download the IP Database file: ${ipResponse.statusText} - ${await ipResponse.text()}`)
         }
 
-        // Ensure fileResponse.body is not null
-        if (fileResponse.body === null) {
-            throw new Error('Response body is null')
+        if (databases['exchange-rates'] && !exchangeRatesResponse?.ok) {
+            throw new Error(`Failed to download the IP Database file: ${exchangeRatesResponse?.statusText} - ${await exchangeRatesResponse?.text()}`)
         }
 
-        // Convert the ReadableStream to a Node.js Readable stream
-        const readableStream = new Readable()
-        readableStream._read = () => {} // _read is required but you can noop it
+        if (ipResponse.body === null) {
+            throw new Error('IP Database is empty')
+        }
 
-        // @ts-ignore: TypeScript doesn't recognize the pipeTo method
-        await fileResponse.body.pipeTo(new WritableStream({
-            write(chunk) {
-                readableStream.push(chunk)
-            },
-            close() {
-                readableStream.push(null)
-            }
-        }))
+        if (databases['exchange-rates'] && exchangeRatesResponse?.body === null) {
+            throw new Error('Exchange Rates Database is empty')
+        }
 
-        const fileStream = createWriteStream(filePath)
+        await Promise.all([
+            saveFile(ipResponse, filePath),
+            databases['exchange-rates'] ? saveFile(exchangeRatesResponse as Response, exchangeRatesFilePath) : undefined,
+        ])
 
-        // Use the pipeline function to handle the streaming
-        await pipeline(readableStream, fileStream)
-
-        console.log(`File downloaded successfully to ${filePath}`)
+        console.log(`Database downloaded successfully`)
     } catch (error) {
         console.error('Error downloading file:', error)
         throw error
     }
-
 }
 
-export async function loadCurrencyExchangeRates(key: string, filePath: string, downloadHostURL?: string) {
-    // TODO, maybe use S3 for this just as IPBlocks
-    const url = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
-
-    try {
-        // Fetch XML data from ECB
-        const response = await fetch(url)
-        if (!response.ok) throw new Error(`Failed to fetch data: ${response.statusText}`)
-        const xmlData = await response.text()
-
-        const jsonData = xml.convertXML(xmlData)
-
-        const rates: Record<string, number> = {EUR: 1}
-        jsonData['gesmes:Envelope'].children[2].Cube.children[0].Cube.children.forEach((item: any) => {
-            rates[item.Cube.currency] = parseFloat(item.Cube.rate)
-        })
-
-        // await makeSureDirectoriesExist(filePath);
-        await fs.writeFile(filePath, JSON.stringify(rates, null, 2), 'utf8')
-
-        console.log(`Exchange rates saved to ${filePath}`)
-    } catch (error) {
-        console.error('Error fetching or saving ECB rates:', error)
-    }
+export async function cloudLoader(key: string, ipRangesFilePage: string, exchangeRatesFilePath: string, downloadHostURL?: string): Promise<void> {
+    await loadIPBlocks(key, ipRangesFilePage, exchangeRatesFilePath, downloadHostURL);
 }
 
-export async function cloudLoader(key: string, ipRangesFilePage: string, currencyRatesFilePath: string, downloadHostURL?: string): Promise<void> {
-    await Promise.all([
-        loadIPBlocks(key, ipRangesFilePage, downloadHostURL),
-        loadCurrencyExchangeRates(key, currencyRatesFilePath, downloadHostURL),
-    ])
+async function saveFile(response: Response, filePath: string) {
+    const readableStream = new Readable()
+    readableStream._read = () => {} // _read is required but you can noop it
+
+    // @ts-ignore: TypeScript doesn't recognize the pipeTo method
+    await response.body.pipeTo(new WritableStream({
+        write(chunk) {
+            readableStream.push(chunk)
+        },
+        close() {
+            readableStream.push(null)
+        }
+    }))
+
+    const fileStream = createWriteStream(filePath)
+
+    // Use the pipeline function to handle the streaming
+    await pipeline(readableStream, fileStream)
 }

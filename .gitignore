@@ -4,8 +4,8 @@ dist
 .geopulse
 tests/ip-ranges.json
 !tests/data/ip-ranges.json
-tests/currency-rates.json
-!tests/data/currency-rates.json
+tests/exchange-rates.json
+!tests/data/exchanges-rates.json
 tests/ip-ranges.meta.json
 new-test-ip-ranges.json
 .env
