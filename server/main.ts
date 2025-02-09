@@ -50,7 +50,7 @@ Deno.serve({ port }, async (request) => {
         const ip = match[1]
 
         console.time('info')
-        const info = await geopulse.lookup(ip)
+        const info = await geopulse.lookup(ip, url.searchParams.get('baseCurrency') ?? undefined)
         console.timeEnd('info')
 
         console.log('ip info ->', ip, info)
