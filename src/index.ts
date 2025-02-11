@@ -1,4 +1,3 @@
-import xml from 'simple-xml-to-json'
 import type { IPGeoPulse, IPRecord, IPv4Record, IPv6Record } from './types.js'
 import { countriesMap, findIPData, optimizeRecords, readData } from './utils.js'
 import fs, { stat, writeFile } from 'node:fs/promises'
@@ -6,6 +5,7 @@ import { Readable } from 'node:stream'
 import { createWriteStream } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
 import { join } from 'node:path'
+import packageJSON from '../package.json' with { type: 'json' }
 
 interface Config {
     baseDirectory?: string
@@ -22,30 +22,42 @@ type AutoUpdateIsOff = {autoUpdate?: false, autoUpdateMinutes?: never}
 export class GeoPulse {
     metadata?: {lastRun: string}
     ipRanges?: {v4: IPv4Record[], v6: IPv6Record[]}
-    currencyRates?: Record<string, number>
+    exchangesRates?: Record<string, number>
 
-    readonly loader: () => void | Promise<void>
+    readonly loader: (onlyMissingFiles: boolean) => void | Promise<void>
 
     constructor(APIKey: string, public config: Config & (AutoUpdateIsOn | AutoUpdateIsOff) = {
         baseDirectory: '.',
     }) {
-        this.loader = config.loader ?? (() => cloudLoader(APIKey, this.ipRangesFilePath, this.currencyRatesFilePath, this.config.downloadHostURL))
+        this.loader = config.loader ?? ((onlyMissingFiles: boolean) => cloudLoader(APIKey, this.ipRangesFilePath, this.exchangeRatesFilePath, {
+            downloadHostURL: this.config.downloadHostURL,
+            onlyMissingFiles
+        }))
+    }
+
+    version() {
+        return packageJSON.version
     }
 
     async init() {
+        if (this.config.autoUpdateMinutes && this.config.autoUpdateMinutes < 1) {
+            throw new Error('Cannot update data more than once every minute')
+        }
+
+        const ipRangesExist = await stat(this.ipRangesFilePath).then(() => true).catch(() => false)
+        const exchangeRatesExist = await stat(this.exchangeRatesFilePath).then(() => true).catch(() => false)
+
+        if (!ipRangesExist || !exchangeRatesExist) {
+            await this.checkDataFreshness(0, ipRangesExist)
+        }
+
         if (this.config.autoUpdate) {
-            if (this.config.autoUpdateMinutes && this.config.autoUpdateMinutes < 1) {
-                throw new Error('Cannot update data more than once every minute')
-            }
-
             const checkTime = async () => {
-                await this.checkDataFreshness(this.config.autoUpdateMinutes)
-
                 setTimeout(checkTime, 60 * 1000) // Schedule the next check after 1 minute
+
+                await this.checkDataFreshness(this.config.autoUpdateMinutes, false)
             }
             await checkTime().then()
-        } else {
-            await this.checkDataFreshness(0)
         }
     }
 
@@ -53,7 +65,7 @@ export class GeoPulse {
         return this.config.baseDirectory ?? './'
     }
 
-    get currencyRatesFilePath() {
+    get exchangeRatesFilePath() {
         return join(this.baseDirectory, this.config.dataFilename ?? 'exchange-rates.json')
     }
 
@@ -66,21 +78,16 @@ export class GeoPulse {
     }
 
     private async loadData() {
-        if (this.ipRanges && this.currencyRates) {
+        if (this.ipRanges) {
             return
         }
 
         if (!this.metadata) {
-            await this.checkDataFreshness(0)
+            await this.checkDataFreshness(0, false)
         }
 
-        await Promise.all([
-            stat(this.ipRangesFilePath),
-            stat(this.currencyRatesFilePath)
-        ]).catch(() => this.checkDataFreshness(0))
-
         this.ipRanges = optimizeRecords(await readData<IPRecord[]>(this.ipRangesFilePath) ?? [])
-        this.currencyRates = await readData<Record<string, number>>(this.currencyRatesFilePath) ?? {}
+        this.exchangesRates = await readData<Record<string, number>>(this.exchangeRatesFilePath) ?? {}
     }
 
     async lookup(ip: string, baseCurrency = 'USD'): Promise<IPGeoPulse | undefined> {
@@ -95,18 +102,23 @@ export class GeoPulse {
             return undefined
         }
 
+        let exchangeRate: Pick<IPGeoPulse, 'exchangeRate' | 'exchangeRateBaseCurrency'> | undefined = undefined
         const countryCurrency = ipData.country.currency?.code
-        const currencyRate = countryCurrency ? this.currencyRates?.[baseCurrency] : undefined
-        const countryCurrencyRate = countryCurrency ? this.currencyRates?.[countryCurrency] : undefined
+        if (this.exchangesRates && countryCurrency) {
+            const currencyRate = this.exchangesRates?.[baseCurrency]
+            const countryCurrencyRate = this.exchangesRates?.[countryCurrency]
 
-        const currencyExchangeDecimalPlaces = 1_000_00
+            const currencyExchangeDecimalPlaces = 1_000_00
 
-        const exchangeRate = countryCurrency ? {
-            exchangeRateBaseCurrency: baseCurrency,
-            exchangeRate: currencyRate && countryCurrencyRate ?
-                Math.round((countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces) / currencyExchangeDecimalPlaces
-                : 1,
-        } : undefined
+            if (currencyRate && countryCurrencyRate) {
+                exchangeRate = {
+                    exchangeRateBaseCurrency: baseCurrency,
+                    exchangeRate: Math.round(
+                        (countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces
+                    ) / currencyExchangeDecimalPlaces,
+                }
+            }
+        }
         return {
             ...ipData,
             ...exchangeRate
@@ -123,16 +135,16 @@ export class GeoPulse {
     async exchangeRates(baseCurrency = 'USD') {
         await this.loadData()
 
-        if (!this.currencyRates) {
+        if (!this.exchangesRates) {
             return {}
         }
 
         // EUR is the default currency rate based on the service we use
-        const baseCurrencyRate = (this.currencyRates.EUR as number) / (this.currencyRates[baseCurrency] as number)
+        const baseCurrencyRate = (this.exchangesRates.EUR as number) / (this.exchangesRates[baseCurrency] as number)
 
         const exchangeRatesBasedOnBaseCurrency: Record<string, number> = {}
-        Object.keys(this.currencyRates).forEach(currencyCode => {
-            exchangeRatesBasedOnBaseCurrency[currencyCode] = (this.currencyRates?.[currencyCode] as number) * baseCurrencyRate
+        Object.keys(this.exchangesRates).forEach(currencyCode => {
+            exchangeRatesBasedOnBaseCurrency[currencyCode] = (this.exchangesRates?.[currencyCode] as number) * baseCurrencyRate
         })
 
         return exchangeRatesBasedOnBaseCurrency
@@ -150,7 +162,7 @@ export class GeoPulse {
         return countriesMap
     }
 
-    private async checkDataFreshness(periodInMinutes = 60 * 24) {
+    private async checkDataFreshness(periodInMinutes = 60 * 24, onlyMissingFiles: boolean) {
         const meta = this.metadata ?? (this.metadata = await readData<{lastRun: string}>(this.metaDataFilenamePath))
         const lastRun = meta?.lastRun
         const targetDate = lastRun && !isNaN(new Date(lastRun).getTime())
@@ -165,7 +177,7 @@ export class GeoPulse {
 
         // console.log('checking for data freshness ->', periodInMinutes, dataExists, now.getTime(), targetDate.getTime(), now.getTime() - targetDate.getTime(), periodInMs)
         if (!dataExists || now.getTime() - targetDate.getTime() >= periodInMs) {
-            await this.loader()
+            await this.loader(onlyMissingFiles)
 
             await writeFile(this.metaDataFilenamePath, JSON.stringify({
                 ...meta,
@@ -182,8 +194,13 @@ export function localLoader(fromFilePath: string, toFilePath: string) {
     return fs.cp(fromFilePath, toFilePath)
 }
 
-export async function loadIPBlocks(key: string, filePath: string, exchangeRatesFilePath: string, downloadHostURL?: string) {
-    console.log(`Getting the database download URLs`)
+export async function cloudLoader(
+    key: string,
+    ipRangesFilePath: string,
+    exchangeRatesFilePath: string,
+    {downloadHostURL, onlyMissingFiles}: {downloadHostURL?: string, onlyMissingFiles?: boolean}
+) {
+    console.log(`Checking database integrity`)
     downloadHostURL = downloadHostURL ?? 'https://wl540c5jbf.execute-api.eu-central-1.amazonaws.com/production'
 
     try {
@@ -201,23 +218,25 @@ export async function loadIPBlocks(key: string, filePath: string, exchangeRatesF
 
         const {databases} = await downloadUrlResponse.json()
 
-        console.log(`Starting to download the databases`)
+        const ipRangesFileExists = await stat(ipRangesFilePath).then(() => true).catch(() => false)
+
+        const downloadIpDatabaseToo = !onlyMissingFiles && !ipRangesFileExists
+
+        if(downloadIpDatabaseToo || databases['exchange-rates']){
+            console.log(`Updating the database. It may take a few seconds...`)
+        }
 
         const [ipResponse, exchangeRatesResponse] = await Promise.all([
-            fetch(databases.ip, {cache: 'no-cache'}),
+            downloadIpDatabaseToo ? fetch(databases.ip, {cache: 'no-cache'}) : undefined,
             databases['exchange-rates'] ? fetch(databases['exchange-rates'], {cache: 'no-cache'}) : undefined,
         ])
 
-        if (!ipResponse.ok) {
+        if (ipResponse && !ipResponse?.ok) {
             throw new Error(`Failed to download the IP Database file: ${ipResponse.statusText} - ${await ipResponse.text()}`)
         }
 
         if (databases['exchange-rates'] && !exchangeRatesResponse?.ok) {
-            throw new Error(`Failed to download the IP Database file: ${exchangeRatesResponse?.statusText} - ${await exchangeRatesResponse?.text()}`)
-        }
-
-        if (ipResponse.body === null) {
-            throw new Error('IP Database is empty')
+            throw new Error(`Failed to download the Exchange Database file: ${exchangeRatesResponse?.statusText} - ${await exchangeRatesResponse?.text()}`)
         }
 
         if (databases['exchange-rates'] && exchangeRatesResponse?.body === null) {
@@ -225,19 +244,19 @@ export async function loadIPBlocks(key: string, filePath: string, exchangeRatesF
         }
 
         await Promise.all([
-            saveFile(ipResponse, filePath),
+            downloadIpDatabaseToo && ipResponse ? saveFile(ipResponse, ipRangesFilePath) : undefined,
             databases['exchange-rates'] ? saveFile(exchangeRatesResponse as Response, exchangeRatesFilePath) : undefined,
         ])
 
-        console.log(`Database downloaded successfully`)
+        if(downloadIpDatabaseToo || databases['exchange-rates']){
+            console.log(`✅ Database updated successfully. Feel free to use the service.`)
+        }else{
+            console.log(`✅ Database is up to date. Feel free to use the service.`)
+        }
     } catch (error) {
         console.error('Error downloading file:', error)
         throw error
     }
-}
-
-export async function cloudLoader(key: string, ipRangesFilePage: string, exchangeRatesFilePath: string, downloadHostURL?: string): Promise<void> {
-    await loadIPBlocks(key, ipRangesFilePage, exchangeRatesFilePath, downloadHostURL);
 }
 
 async function saveFile(response: Response, filePath: string) {

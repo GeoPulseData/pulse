@@ -29,13 +29,13 @@ describe('GeoPulse autoUpdate', async () => {
 
     beforeAll(async () => {
         await rm(geoPulse.ipRangesFilePath, {force: true})
-        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.exchangeRatesFilePath, {force: true})
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 
     afterEach(async () => {
         await rm(geoPulse.ipRangesFilePath, {force: true})
-        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.exchangeRatesFilePath, {force: true})
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 

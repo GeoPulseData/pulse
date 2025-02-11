@@ -9,7 +9,7 @@
 		"compile-windows": "deno compile --target x86_64-pc-windows-msvc --allow-net --allow-read --allow-write --output ../binaries/GeoPulse-windows main.ts",
 		"compile:all": "deno run compile-macos-x86 && deno run compile-macos-arm && deno run compile-linux-x86 && deno run compile-linux-arm && deno run compile-windows"
 	},
-//	"nodeModulesDir": "manual",
+	"nodeModulesDir": "manual",
 	"imports": {
 		"@std/assert": "jsr:@std/assert@1"
 	},

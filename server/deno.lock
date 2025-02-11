@@ -1,178 +1,32 @@
 {
   "version": "4",
   "specifiers": {
+    "jsr:@std/assert@1": "1.0.11",
     "jsr:@std/cli@*": "1.0.9",
-    "npm:geopulse@*": "0.0.11",
-    "npm:geopulse@0.0.12": "0.0.12",
-    "npm:geopulse@0.0.13": "0.0.13",
-    "npm:geopulse@0.0.14": "0.0.14",
-    "npm:geopulse@0.0.15": "0.0.15",
-    "npm:geopulse@0.0.16": "0.0.16",
-    "npm:geopulse@0.0.17": "0.0.17",
-    "npm:geopulse@0.0.18": "0.0.18",
-    "npm:geopulse@0.0.19": "0.0.19",
-    "npm:geopulse@0.0.20": "0.0.20",
-    "npm:geopulse@0.0.21": "0.0.21",
-    "npm:geopulse@0.0.22": "0.0.22",
-    "npm:geopulse@0.0.23": "0.0.23",
-    "npm:geopulse@0.0.24": "0.0.24",
-    "npm:geopulse@0.0.25": "0.0.25",
-    "npm:geopulse@0.0.26": "0.0.26",
-    "npm:geopulse@0.0.27": "0.0.27",
-    "npm:geopulse@0.0.28": "0.0.28",
-    "npm:geopulse@0.0.29": "0.0.29",
-    "npm:geopulse@0.0.30": "0.0.30",
-    "npm:geopulse@0.0.31": "0.0.31",
-    "npm:geopulse@0.0.32": "0.0.32",
-    "npm:geopulse@0.0.34": "0.0.34",
-    "npm:uuid@*": "11.0.3"
+    "jsr:@std/internal@^1.0.5": "1.0.5"
   },
   "jsr": {
+    "@std/assert@1.0.11": {
+      "integrity": "2461ef3c368fe88bc60e186e7744a93112f16fd110022e113a0849e94d1c83c1",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
     "@std/cli@1.0.9": {
       "integrity": "557e5865af000efbf3f737dcfea5b8ab86453594f4a9cd8d08c9fa83d8e3f3bc"
+    },
+    "@std/internal@1.0.5": {
+      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
     }
-  },
-  "npm": {
-    "geopulse@0.0.11": {
-      "integrity": "sha512-6PxpkcaCDTu/GFPxqJ3A0/IDOZ+gs35/9bUekc319Qtmo1T5k4XljuFziXzMsv9/PHlkuATlYOt49ppXvepbHQ=="
-    },
-    "geopulse@0.0.12": {
-      "integrity": "sha512-u50MmCwS9avhUAo+2JV4BziA1YQy9lBjCqRjQGSP+hp2VLyVO61HUW27fzo7tlRbj37RVPV8SuwUbrf1xrP2oQ=="
-    },
-    "geopulse@0.0.13": {
-      "integrity": "sha512-WjmSXQxqm+P7HlFZXJCl7GOaYaGHWr+QYWZLQJRtBfplNYtJ4o9owExCuebxbxTB/yllm0LUCsrk97ouxyYYiQ=="
-    },
-    "geopulse@0.0.14": {
-      "integrity": "sha512-Tcs2HKheaHCay5EM7iAU5X2MphIoX7oYGi/0HqC/nYecUiwsOqn/1TJCiegQ3vLBFdJzduJXax5+uPykY9pufA=="
-    },
-    "geopulse@0.0.15": {
-      "integrity": "sha512-C8n5qQQ5neSn+zhk8LMbp5vYjJQQXstCDsT0rS7hHhg085dxCp5B2TJwpuH3boH/t1NTxig/ykVQQMZ5r+pOMQ=="
-    },
-    "geopulse@0.0.16": {
-      "integrity": "sha512-FQxF4kCAt0hSKaQ4s1md2cYet9U3sDVs1uBJzVHBkTMKMrZhgM2+WvtfBWNbE843gTqMx51mgf3s5E1UeB0OkA=="
-    },
-    "geopulse@0.0.17": {
-      "integrity": "sha512-K7Ykwdknwpa8RzsW9hpBuRKx95y1cS7gKJy7L4LIPdOItFuKH8bYgtWKZkvl8+vLMYUBqHoNeLcB9x6NM4S/bQ=="
-    },
-    "geopulse@0.0.18": {
-      "integrity": "sha512-vAdt7r6KbFpPh8M7euO/+GTUgJHtfayttYktTkHFLpDTWF2U3t6WyiQZzHxVSLcQciZEMP5X5UABluyDnFOETg=="
-    },
-    "geopulse@0.0.19": {
-      "integrity": "sha512-6d+tO+dlTULmJiGJsMBfi2ikFqzRHdnx6f1qW6Gyjbhd4lg6N1REhcDHWEYrXKuCFvJPHsTaTHyFJnxZi96TQQ=="
-    },
-    "geopulse@0.0.20": {
-      "integrity": "sha512-MIjG87yVFrURbemKgXfT1tCrj0zwHZev6jSfIbNTjKqP4WXVXT0gtgCM0ND8RFPpUPanZ16qApuU2pNrLxZ2pw==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.21": {
-      "integrity": "sha512-WbwA4aO96wg+FjIGp/w7oNbJKbCkvSOc5PMPvXNDEDSeC846fi0+jaZf5Y2Qodfj2D0ViFL5HyhMOws4OdXpAQ==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.22": {
-      "integrity": "sha512-hXtIw0+IEdK1LpBf+kyXVxYBvLv5+CTBUzEDTzHVYtkPSz+nPXS6+PrlDd8ctDaVOtlv8EcL7S1BxvHWQl2hQg==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.23": {
-      "integrity": "sha512-2Pkla2jBDts3Z4Rj6KiUEtKn1ij/8eITJSo8i4QQ5W96g2Q6rJrfEUENN36MCOZ5pXSHtIA4Nw+L2JnED65ADQ==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.24": {
-      "integrity": "sha512-SoT6Rfyp8fHvJxofRULzszlJwV+Ylibbq02apDGc5AQI3LdgmyXs0Tt5TMRmfcDecN+ya3LdVav+84i1EK9Dpg==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.25": {
-      "integrity": "sha512-M1Z5JCKfUzjbXItmXt3Cvs/PZApot/9dcwIILAjmx22wG/8WXBrwXcdZFwJIiMMgtfMYzib0NPa6masJT2NwEw==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.26": {
-      "integrity": "sha512-rv9Abk3BG3O/0EPR3u8PZ4pECMDNGgK/5lrG+YvHDtpt5EXNSuIqZARcC2w/3s7X4eQR95Pksd/vmqnJXuknag==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.27": {
-      "integrity": "sha512-Gg/TjGLXZBPFg2aggUePj8LVgvIRg+XdWLYP+AOCT2mZdCdJgTlVKZrJGXL64YAZXDu+A8TTbwXMP/87wMpzFA==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.28": {
-      "integrity": "sha512-HzLNgbIXllUf+NGpnHdD4R/c5s1hQv4nQ3BEOFLOIGj19HHnEu98Y1q5AF/zzmZN53xaGTcbNXChmmxDgzjHIA==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.29": {
-      "integrity": "sha512-2O/WBQMj8cVfY1iX+kUh6RvP6jzOKPddPkYV/4OTHgcMXq1sDXenPBDZdR/PVSAZpHGZPMF8zbN8SOqoF56TNg==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.30": {
-      "integrity": "sha512-910vbOVDqblYVcDyXwk26LnWzpwplHKynuW8JL1jw32bzjuh441W7rjilOhILTjZqhQwRQGdb4IsJCrBYibXiQ==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.31": {
-      "integrity": "sha512-aPC1wr6Gi+wWQyWNFRHR5rVgu63aCPI8BXCqap/T1ZPfO1LaQJpE7p8OrZV6BtkAyc8pMdVsglLLfQl1YWxgOA==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.32": {
-      "integrity": "sha512-ZeobL53Mr3IBa7bP28ZOFuDzbyzkUI6fhnKFbea3JeaQLzIsupCrB2Erl1fLbPMl/s2SHsFtqTQsxUYCAa02Eg==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "geopulse@0.0.34": {
-      "integrity": "sha512-DYsCb4hMoEhN1ECNZLlg5C/GtNR1b3TPPSETDXrfoGJzb08oPAgjc4P0a2zkM0ybeTise046X4WiRAz/lCO4rw==",
-      "dependencies": [
-        "simple-xml-to-json"
-      ]
-    },
-    "simple-xml-to-json@1.2.3": {
-      "integrity": "sha512-kWJDCr9EWtZ+/EYYM5MareWj2cRnZGF93YDNpH4jQiHB+hBIZnfPFSQiVMzZOdk+zXWqTZ/9fTeQNu2DqeiudA=="
-    },
-    "uuid@11.0.3": {
-      "integrity": "sha512-d0z310fCWv5dJwnX1Y/MncBAqGMKEzlBb1AOf7z9K8ALnd0utBX/msg/fA0+sbyN1ihbMsLhrBlnl1ak7Wa0rg=="
-    }
-  },
-  "remote": {
-    "https://deno.land/std@0.196.0/assert/assert.ts": "9a97dad6d98c238938e7540736b826440ad8c1c1e54430ca4c4e623e585607ee",
-    "https://deno.land/std@0.196.0/assert/assertion_error.ts": "4d0bde9b374dfbcbe8ac23f54f567b77024fb67dbb1906a852d67fe050d42f56",
-    "https://deno.land/std@0.196.0/async/abortable.ts": "fd682fa46f3b7b16b4606a5ab52a7ce309434b76f820d3221bdfb862719a15d7",
-    "https://deno.land/std@0.196.0/async/deadline.ts": "58f72a3cc0fcb731b2cc055ba046f4b5be3349ff6bf98f2e793c3b969354aab2",
-    "https://deno.land/std@0.196.0/async/debounce.ts": "adab11d04ca38d699444ac8a9d9856b4155e8dda2afd07ce78276c01ea5a4332",
-    "https://deno.land/std@0.196.0/async/deferred.ts": "42790112f36a75a57db4a96d33974a936deb7b04d25c6084a9fa8a49f135def8",
-    "https://deno.land/std@0.196.0/async/delay.ts": "a6142eb44cdd856b645086af2b811b1fcce08ec06bb7d50969e6a872ee9b8659",
-    "https://deno.land/std@0.196.0/async/mod.ts": "f04344fa21738e5ad6bea37a6bfffd57c617c2d372bb9f9dcfd118a1b622e576",
-    "https://deno.land/std@0.196.0/async/mux_async_iterator.ts": "70c7f2ee4e9466161350473ad61cac0b9f115cff4c552eaa7ef9d50c4cbb4cc9",
-    "https://deno.land/std@0.196.0/async/pool.ts": "f1b8d3df4d7fd3c73f8cbc91cc2e8b8e950910f1eab94230b443944d7584c657",
-    "https://deno.land/std@0.196.0/async/retry.ts": "296fb9c323e1325a69bee14ba947e7da7409a8dd9dd646d70cb51ea0d301f24e",
-    "https://deno.land/std@0.196.0/async/tee.ts": "47e42d35f622650b02234d43803d0383a89eb4387e1b83b5a40106d18ae36757",
-    "https://deno.land/std@0.196.0/http/server.ts": "3cd5a8acc31d3259813ddcfa7dd2fe066952db6763fc7a58b9a026d4b5af9559",
-    "https://deno.land/std@0.208.0/assert/assert.ts": "9a97dad6d98c238938e7540736b826440ad8c1c1e54430ca4c4e623e585607ee",
-    "https://deno.land/std@0.208.0/assert/assertion_error.ts": "4d0bde9b374dfbcbe8ac23f54f567b77024fb67dbb1906a852d67fe050d42f56",
-    "https://deno.land/std@0.208.0/cli/parse_args.ts": "9bea02050b3f302e706871ff87ecfa3ad82cc34249adbe0dcddfaac75bdb48ff",
-    "https://deno.land/std@0.208.0/flags/mod.ts": "567a34800a33e701942cb1726dd7e627a76e4681c33ce7346ac85cf90f691a8e"
   },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1"
-    ]
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:geopulse@0.0.39"
+      ]
+    }
   }
 }

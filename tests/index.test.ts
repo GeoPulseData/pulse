@@ -7,7 +7,7 @@ import type { IPRecord } from '../src/types.js'
 import countries from '../src/countries.json' with { type: 'json' }
 
 const ipRangesPath = './tests/data/ip-ranges.json'
-const currenciesPath = './tests/data/currency-rates.json'
+const currenciesPath = './tests/data/exchange-rates.json'
 
 describe('reads ip data', () => {
     test('tries to read the data and returns undefined if it does not exist', async () => {
@@ -17,7 +17,7 @@ describe('reads ip data', () => {
     test('loads a fresh set of data', async () => {
         const loader = async () => {
             await cp(ipRangesPath, './tests/ip-ranges.json')
-            await cp(currenciesPath, './tests/currency-rates.json')
+            await cp(currenciesPath, './tests/exchange-rates.json')
         }
 
         const geoPulse = new GeoPulse('TEST API KEY', {
@@ -32,7 +32,7 @@ describe('reads ip data', () => {
                 .catch(() => false)
         ).toBe(true)
         expect(
-            await access('./tests/currency-rates.json', constants.F_OK)
+            await access('./tests/exchange-rates.json', constants.F_OK)
                 .then(() => true)
                 .catch(() => false)
         ).toBe(true)
@@ -55,20 +55,20 @@ describe('reads ip data', () => {
             endNum: ipToNumber('80.65.223.255'),
         })
 
-        const currencyRates = await readData<Record<string, number>>('./tests/currency-rates.json') ?? []
+        const currencyRates = await readData<Record<string, number>>('./tests/exchange-rates.json') ?? []
         expect(currencyRates).toHaveProperty('EUR')
         expect(currencyRates).toHaveProperty('USD')
         expect(currencyRates).toHaveProperty('RON')
 
         await rm(geoPulse.ipRangesFilePath, {force: true})
-        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.exchangeRatesFilePath, {force: true})
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 
     test('find the ip data', async () => {
         const loader = () => {
             cp(ipRangesPath, './tests/ip-ranges.json')
-            cp(currenciesPath, './tests/currency-rates.json')
+            cp(currenciesPath, './tests/exchange-rates.json')
         }
 
         const geoPulse = new GeoPulse('TEST API KEY', {
@@ -125,7 +125,7 @@ describe('reads ip data', () => {
         })
 
         await rm(geoPulse.ipRangesFilePath, {force: true})
-        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.exchangeRatesFilePath, {force: true})
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 
@@ -148,7 +148,7 @@ describe('exchange rate', () => {
     beforeEach(async () => {
         const loader = () => {
             cp(ipRangesPath, './tests/ip-ranges.json')
-            cp(currenciesPath, './tests/currency-rates.json')
+            cp(currenciesPath, './tests/exchange-rates.json')
         }
 
         geoPulse = new GeoPulse('TEST API KEY', {
@@ -156,7 +156,7 @@ describe('exchange rate', () => {
             loader
         })
         await geoPulse.init()
-        allExchangeRates = (await readData('./tests/currency-rates.json')) as Record<string, number>
+        allExchangeRates = (await readData('./tests/exchange-rates.json')) as Record<string, number>
     })
 
     test('shows all exchange rates in EUR', async () => {
@@ -213,7 +213,7 @@ describe('countries', () => {
     afterAll(async () => {
 
         await rm(geoPulse.ipRangesFilePath, {force: true})
-        await rm(geoPulse.currencyRatesFilePath, {force: true})
+        await rm(geoPulse.exchangeRatesFilePath, {force: true})
         await rm(geoPulse.metaDataFilenamePath, {force: true})
     })
 })
