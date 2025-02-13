@@ -108,21 +108,17 @@ export class GeoPulse {
             const currencyRate = this.exchangesRates?.[baseCurrency]
             const countryCurrencyRate = this.exchangesRates?.[countryCurrency]
 
-            const currencyExchangeDecimalPlaces = 1_000_00
 
             if (currencyRate && countryCurrencyRate) {
-                exchangeRate = {
-                    exchangeRateBaseCurrency: baseCurrency,
-                    exchangeRate: Math.round(
-                        (countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces
-                    ) / currencyExchangeDecimalPlaces,
-                }
+                const currencyExchangeDecimalPlaces = 1_000_00
+                ipData.exchangeRateBaseCurrency = baseCurrency
+                ipData.exchangeRate = Math.round(
+                    (countryCurrencyRate / currencyRate + Number.EPSILON) * currencyExchangeDecimalPlaces
+                ) / currencyExchangeDecimalPlaces
             }
         }
-        return {
-            ...ipData,
-            ...exchangeRate
-        }
+
+        return ipData
 
         // If IP isn't in the RIPE or APNIC range, check ARIN
         // const whoisData = await fetchARINWHOIS(ip)
@@ -222,7 +218,7 @@ export async function cloudLoader(
 
         const downloadIpDatabaseToo = !onlyMissingFiles && !ipRangesFileExists
 
-        if(downloadIpDatabaseToo || databases['exchange-rates']){
+        if (downloadIpDatabaseToo || databases['exchange-rates']) {
             console.log(`Updating the database. It may take a few seconds...`)
         }
 
@@ -248,9 +244,9 @@ export async function cloudLoader(
             databases['exchange-rates'] ? saveFile(exchangeRatesResponse as Response, exchangeRatesFilePath) : undefined,
         ])
 
-        if(downloadIpDatabaseToo || databases['exchange-rates']){
+        if (downloadIpDatabaseToo || databases['exchange-rates']) {
             console.log(`✅ Database updated successfully. Feel free to use the service.`)
-        }else{
+        } else {
             console.log(`✅ Database is up to date. Feel free to use the service.`)
         }
     } catch (error) {
