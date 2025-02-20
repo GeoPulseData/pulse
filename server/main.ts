@@ -38,7 +38,7 @@ Deno.serve({ port }, async (request) => {
         if (!requestKey) {
             return new Response(
                 JSON.stringify({
-                    'message': 'No API key provided. Please consult de documentation for further information.',
+                    'message': 'No API key provided. Please consult the documentation for further information.',
                 }),
                 {
                     status: 401,

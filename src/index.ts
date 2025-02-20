@@ -214,9 +214,8 @@ export async function cloudLoader(
 
         const {databases} = await downloadUrlResponse.json()
 
-        const ipRangesFileExists = await stat(ipRangesFilePath).then(() => true).catch(() => false)
 
-        const downloadIpDatabaseToo = !onlyMissingFiles && !ipRangesFileExists
+        const downloadIpDatabaseToo = !onlyMissingFiles
 
         if (downloadIpDatabaseToo || databases['exchange-rates']) {
             console.log(`Updating the database. It may take a few seconds...`)

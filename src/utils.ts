@@ -83,6 +83,7 @@ export function findIPData(ip: string, records: {v4: IPv4Record[], v6: IPv6Recor
             localTime: 'coming soon',
             localTimeUnix: 'coming soon',
         },
+        asn: ipRecord.asn
     }
 }
 

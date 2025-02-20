@@ -12,6 +12,12 @@ export interface IPRecord {
     start: string
     end: string
     country: string
+    asn?:{
+        id: number,
+        name: string,
+        cidr: string
+        country: string
+    }
 }
 
 export interface Country {
@@ -57,4 +63,5 @@ export interface IPGeoPulse {
         localTime: string,
         localTimeUnix: string,
     },
+    asn?: IPRecord['asn']
 }

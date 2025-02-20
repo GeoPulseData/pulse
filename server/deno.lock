@@ -3,7 +3,8 @@
   "specifiers": {
     "jsr:@std/assert@1": "1.0.11",
     "jsr:@std/cli@*": "1.0.9",
-    "jsr:@std/internal@^1.0.5": "1.0.5"
+    "jsr:@std/internal@^1.0.5": "1.0.5",
+    "npm:geopulse@^0.0.40": "0.0.40"
   },
   "jsr": {
     "@std/assert@1.0.11": {
@@ -19,13 +20,24 @@
       "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
     }
   },
+  "npm": {
+    "geopulse@0.0.40": {
+      "integrity": "sha512-i9PuB4RbML8nNT3lIGc7TTR9j7Pmiu2v6jMfPweH1Z3LAmac7QpuGPltClUEizVVemL07SraiB6hxkXcUOLFGQ==",
+      "dependencies": [
+        "simple-xml-to-json"
+      ]
+    },
+    "simple-xml-to-json@1.2.3": {
+      "integrity": "sha512-kWJDCr9EWtZ+/EYYM5MareWj2cRnZGF93YDNpH4jQiHB+hBIZnfPFSQiVMzZOdk+zXWqTZ/9fTeQNu2DqeiudA=="
+    }
+  },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1"
     ],
     "packageJson": {
       "dependencies": [
-        "npm:geopulse@0.0.39"
+        "npm:geopulse@^0.0.40"
       ]
     }
   }
